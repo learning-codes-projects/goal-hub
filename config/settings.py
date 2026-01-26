@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "dashboard",
     "users",
     "register",
+    "login",
 ]
 
 MIDDLEWARE = [
@@ -69,6 +70,11 @@ TEMPLATES = [
         },
     },
 ]
+
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "dashboard"
+LOGOUT_REDIRECT_URL = "login"
+
 
 WSGI_APPLICATION = "config.wsgi.application"
 
