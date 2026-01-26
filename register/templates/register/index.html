@@ -1,26 +1,62 @@
 {% extends "base.html" %}
+{% load widget_tweaks %}
 {% block content %}
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-6 col-lg-5">
-      <div class="card shadow-sm">
-        <div class="card-body p-4">
-          <h1 class="h4 mb-3">Crear cuenta</h1>
-          <p class="text-muted mb-4">Completá tus datos para registrarte.</p>
-          <form method="post" novalidate>
-            {% csrf_token %}
-            {% for field in form %}
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-7 col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-body p-4 p-md-5">
+            <div class="mb-4">
+              <h1 class="h3 fw-bold mb-1">Crear cuenta</h1>
+              <p class="text-muted mb-0">Completá tus datos para registrarte.</p>
+            </div>
+            <form method="post" novalidate>
+              {% csrf_token %}
+              {# Username #}
               <div class="mb-3">
-                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
-                {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                <label class="form-label fw-semibold" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                {% render_field form.username class+="form-control form-control-lg" placeholder="Tu usuario" required="required" %}
+                {% for error in form.username.errors %}
+                  <div class="invalid-feedback d-block">{{ error }}</div>
+                  <div class="mt-2 p-3 rounded-3 bg-warning-subtle border border-warning-subtle">
+                    <div class="small text-body-secondary">{{ form.username.help_text|safe }}</div>
+                  </div>
+                {% endfor %}
               </div>
-            {% endfor %}
-            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-            <button type="submit" class="btn btn-primary w-100 mt-2">Crear cuenta</button>
-          </form>
+              {# Password 1 #}
+              <div class="mb-3">
+                <label class="form-label fw-semibold"
+                       for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+                {% render_field form.password1 class+="form-control form-control-lg" placeholder="••••••••" required="required" %}
+                {% for error in form.password1.errors %}
+                  <div class="invalid-feedback d-block">{{ error }}</div>
+                  <div class="mt-2 p-3 rounded-3 bg-warning-subtle border border-warning-subtle">
+                    <div class="small text-body-secondary">{{ form.password1.help_text|safe }}</div>
+                  </div>
+                {% endfor %}
+              </div>
+              {# Password 2 #}
+              <div class="mb-4">
+                <label class="form-label fw-semibold"
+                       for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+                {% render_field form.password2 class+="form-control form-control-lg" placeholder="Repetí tu contraseña" required="required" %}
+                {% for error in form.password2.errors %}
+                  <div class="invalid-feedback d-block">{{ error }}</div>
+                  <div class="form-text text-muted mt-1">{{ form.password2.help_text|safe }}</div>
+                {% endfor %}
+              </div>
+              <button type="submit" class="btn btn-primary btn-lg w-100 rounded-3">Crear cuenta</button>
+              <p class="text-center text-muted mt-3 mb-0 small">
+                ¿Ya tenés cuenta? <a href="#" class="link-primary text-decoration-none">Iniciá sesión</a>
+              </p>
+            </form>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  <<<<<<< HEAD
 {% endblock %}
+=======
+{% endblock content %}
+>>>>>>> 6020991 (Merge branch 'develop' of https://github.com/learning-codes-projects/django-single into develop)

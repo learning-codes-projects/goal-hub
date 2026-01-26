@@ -1,5 +1,8 @@
 Django>=4.2.0
 
+django-widget-tweaks
+Pillow
+
 # Dev tools
 pre-commit
 commitizen
