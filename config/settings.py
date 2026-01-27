@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "register",
     "login",
     "widget_tweaks",
+    "my_profile.apps.MyProfileConfig",
 ]
 
 MIDDLEWARE = [
