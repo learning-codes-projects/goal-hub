@@ -50,8 +50,12 @@ fi
 
 echo "🐍 Python: $(python --version)"
 
+
+
 # Aplicar migraciones
+
 echo "🗄️  Aplicando migraciones..."
+python manage.py makemigrations
 python manage.py migrate
 echo "✅ Migraciones aplicadas"
 
