@@ -20,14 +20,16 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("dashboard/", include("dashboard.urls")),
     path("users/", include("users.urls")),
     path("register/", include("register.urls")),
-    path("login/", include("login.urls")),
+    path("", include("login.urls")),
     path("my_profile/", include("my_profile.urls")),
     path("products/", include("products.urls")),
+    
 ]
 
 if settings.DEBUG: 

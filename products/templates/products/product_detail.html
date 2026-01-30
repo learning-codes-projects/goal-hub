@@ -16,15 +16,17 @@
     </div>
 
     <div class="d-flex gap-2">
-      <a href="{% url 'products:update' product.pk %}" class="btn btn-outline-secondary">
-        Editar
-      </a>
-      <a href="{% url 'products:delete' product.pk %}" class="btn btn-outline-danger">
-        Eliminar
-      </a>
-      <a href="{% url 'products:list' %}" class="btn btn-primary">
-        Volver
-      </a>
+
+      {% if perms.products.change_product %}
+        <a href="{% url 'products:update' product.pk %}" class="btn btn-sm btn-outline-secondary">
+          Editar
+        </a>
+      {% endif %}
+      {% if perms.products.delete_product %}
+        <a href="{% url 'products:delete' product.pk %}" class="btn btn-sm btn-outline-danger">
+          Eliminar
+        </a>
+      {% endif %}
     </div>
   </div>
 
@@ -106,12 +108,16 @@
             <a href="{% url 'products:list' %}" class="btn btn-outline-primary">
               ← Volver al listado
             </a>
-            <a href="{% url 'products:update' product.pk %}" class="btn btn-outline-secondary">
-              Editar
-            </a>
-            <a href="{% url 'products:delete' product.pk %}" class="btn btn-outline-danger">
-              Eliminar
-            </a>
+            {% if perms.products.change_product %}
+              <a href="{% url 'products:update' product.pk %}" class="btn btn-sm btn-outline-secondary">
+                Editar
+              </a>
+            {% endif %}
+            {% if perms.products.delete_product %}
+              <a href="{% url 'products:delete' product.pk %}" class="btn btn-sm btn-outline-danger">
+                Eliminar
+              </a>
+            {% endif %}
           </div>
 
         </div>

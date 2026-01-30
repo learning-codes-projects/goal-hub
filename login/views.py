@@ -1,25 +1,28 @@
 # accounts/views.py
 from django.contrib.auth import login as dj_login, logout as dj_logout
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.conf import settings
+
 
 def login_view(request):
-    # Si ya está logueado, lo mandamos al dashboard
     if request.user.is_authenticated:
-        return redirect("dashboard")
+        return redirect("dashboard:home")
 
     if request.method == "POST":
-        form = AuthenticationForm(request, data=request.POST)  # <-- FORM REAL
+        form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            user = form.get_user()
-            dj_login(request, user)
-            # soporte de next (si venís de una ruta protegida)
-            next_url = request.GET.get("next") or reverse("dashboard")
-            return redirect(next_url)
+            dj_login(request, form.get_user())
+
+            next_url = request.GET.get("next")
+            if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+                return redirect(next_url)
+
+            return redirect("dashboard:home")
     else:
-        form = AuthenticationForm(request)  # <-- FORM VACÍO
+        form = AuthenticationForm(request)
 
     return render(request, "login/index.html", {"form": form})
 
@@ -27,6 +30,4 @@ def logout_view(request):
     dj_logout(request)
     return redirect("login")
 
-@login_required
-def dashboard_view(request):
-    return render(request, "dashboard/index.html", {"title": "Dashboard"})
+

@@ -14,7 +14,7 @@ class RegisterView( FormView):
     template_name = "register/index.html"
     form_class = UserCreationForm
     success_url = reverse_lazy(
-        "dashboard:index"
+        "dashboard:home"
     )  # Redirige al formulario de registro después de guardar
     redirect_url = reverse_lazy("dashboard")
 

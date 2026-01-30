@@ -3,7 +3,7 @@ from io import BytesIO
 from PIL import Image
 
 
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
@@ -50,64 +50,68 @@ def _parse_base64_input(value: str) -> tuple[str, str]:
 
 
 
-class ProductListView(ListView):
+class ProductListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Product
     template_name = "products/product_list.html"
     context_object_name = "products"
+    permission_required = "products.view_product"
+    raise_exception = True
 
-
-class ProductDetailView(DetailView):
+class ProductDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = Product
     template_name = "products/product_detail.html"
     context_object_name = "product"
 
+    permission_required = "products.view_product"
+    raise_exception = True
 
-class ProductCreateView(LoginRequiredMixin, CreateView):
+
+class ProductCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Product
     form_class = ProductForm
     template_name = "products/product_form.html"
 
+    permission_required = "products.add_product"
+    raise_exception = True  # <- logueado sin permiso => 403
+
     def form_valid(self, form):
-        # 1) Si suben archivo -> lo codificamos
         upload = form.cleaned_data.get("photo")
         if upload:
             b64 = base64.b64encode(upload.read()).decode("utf-8")
             form.instance.photo_b64 = b64
             form.instance.photo_mime = getattr(upload, "content_type", "") or "application/octet-stream"
-            # opcional: no guardar archivo físico
             form.instance.photo = None
-
-
-
         return super().form_valid(form)
 
-    def get_absolute_url(self):
-        return reverse("products:detail", kwargs={"pk": self.pk})
+    def get_success_url(self):
+        return reverse("products:detail", kwargs={"pk": self.object.pk})
 
 
-
-class ProductUpdateView(LoginRequiredMixin, UpdateView):
+class ProductUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Product
     form_class = ProductForm
     template_name = "products/product_form.html"
 
+    permission_required = "products.change_product"
+    raise_exception = True
+
     def form_valid(self, form):
         upload = form.cleaned_data.get("photo")
- 
-
-        # Solo reemplaza si llega algo nuevo; si no, mantiene lo que tenía
         if upload:
             b64 = base64.b64encode(upload.read()).decode("utf-8")
             form.instance.photo_b64 = b64
             form.instance.photo_mime = getattr(upload, "content_type", "") or "application/octet-stream"
             form.instance.photo = None
-
-  
-
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return reverse("products:detail", kwargs={"pk": self.object.pk})
 
-class ProductDeleteView(LoginRequiredMixin, DeleteView):
+
+class ProductDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Product
     template_name = "products/product_confirm_delete.html"
     success_url = reverse_lazy("products:list")
+
+    permission_required = "products.delete_product"
+    raise_exception = True
