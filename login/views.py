@@ -16,6 +16,8 @@ def login_view(request):
         if form.is_valid():
             dj_login(request, form.get_user())
 
+            
+
             next_url = request.GET.get("next")
             if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                 return redirect(next_url)

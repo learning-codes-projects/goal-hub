@@ -1,0 +1,68 @@
+# cart/models.py
+from decimal import Decimal
+from django.conf import settings
+from django.db import models
+from django.db.models import Q
+
+
+class Cart(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Active"
+        CHECKED_OUT = "CHECKED_OUT", "Checked out"
+        ABANDONED = "ABANDONED", "Abandoned"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="carts",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+        db_index=True,
+    )
+
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+
+    checked_out_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # ✅ index para encontrar rápido el carrito activo del user
+        indexes = [
+            models.Index(fields=["user", "status"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=Q(status="ACTIVE"),
+                name="uniq_active_cart_per_user",
+            ),   
+        ]
+
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey("products.Product", on_delete=models.CASCADE)
+
+    quantity = models.PositiveIntegerField(default=1)
+
+    # snapshot al agregar (opcional pero útil)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            # ✅ el mismo producto NO se duplica dentro del mismo carrito
+            models.UniqueConstraint(fields=["cart", "product"], name="uniq_cart_product"),
+
+            # ✅ cantidades y precio válidos
+            models.CheckConstraint(check=Q(quantity__gt=0), name="cart_qty_gt_0"),
+            models.CheckConstraint(check=Q(unit_price__gte=0), name="cart_unit_price_gte_0"),
+        ]

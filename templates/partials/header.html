@@ -19,7 +19,7 @@
     <div class="collapse navbar-collapse" id="mainNavbar">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item">
-          {% if perms.products.change_product %}
+          {% if perms.products.view_product %}
             <a class="nav-link" href="{% url 'products:list' %}">Productos</a>
           {% endif %}
         </li>
@@ -27,6 +27,9 @@
 
       <div class="d-flex gap-2">
         {% if request.user.is_authenticated %}
+          {% if perms.cart.view_cart %}
+            <a href="{% url 'cart:detail' %}" class="btn btn-primary">Carrito</a>
+          {% endif %}
           <span class="navbar-text small text-muted">
             Hola, {{ request.user.username }}
           </span>

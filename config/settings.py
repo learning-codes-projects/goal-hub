@@ -45,7 +45,9 @@ INSTALLED_APPS = [
     "login",
     "widget_tweaks",
     "my_profile",
-    "products"
+    "products",
+    "cart"
+
 ]
 
 MIDDLEWARE = [

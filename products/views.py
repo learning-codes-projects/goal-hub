@@ -6,6 +6,10 @@ from PIL import Image
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
 
 from .models import Product
 from .forms import ProductForm
@@ -115,3 +119,16 @@ class ProductDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView)
 
     permission_required = "products.delete_product"
     raise_exception = True
+
+@require_POST
+@login_required
+def cart_add(request, product_id: int):
+    qty = request.POST.get("quantity", 1)
+
+    try:
+        add_item(request.user, product_id=product_id, quantity=qty)
+        messages.success(request, "Producto agregado al carrito.")
+    except CartServiceError as e:
+        messages.error(request, str(e))
+
+    return redirect("cart:detail")

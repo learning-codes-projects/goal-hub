@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Tu carrito</h1>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cart:item_create' %}" class="btn btn-primary btn-sm">Agregar ítem</a>
+      <a href="{% url 'products:list' %}" class="btn btn-outline-secondary btn-sm">Seguir comprando</a>
+    </div>
+  </div>
+
+  {% if items %}
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th style="width:180px;">Cantidad</th>
+                <th class="text-end">Precio</th>
+                <th class="text-end">Subtotal</th>
+                <th class="text-end"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in items %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ item.product.name }}</div>
+                    <small class="text-muted">Stock: {{ item.product.stock }}</small>
+                  </td>
+                  <td>{{ item.quantity }}</td>
+                  <td class="text-end">${{ item.unit_price }}</td>
+                  <td class="text-end">${{ item.unit_price|floatformat:2 }}</td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'cart:item_update' item.id %}">
+                      Editar
+                    </a>
+
+                    <form method="post" action="{% url 'cart:item_delete' item.id %}" class="d-inline">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger" type="submit">
+                        Eliminar
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+          <div class="text-end">
+            <div class="text-muted">Total</div>
+            <div class="h4 mb-0">${{ cart.total }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-info">Tu carrito está vacío.</div>
+  {% endif %}
+</div>
+{% endblock %}
