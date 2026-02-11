@@ -23,6 +23,11 @@
             <a class="nav-link" href="{% url 'products:list' %}">Productos</a>
           {% endif %}
         </li>
+        <li class="nav-item">
+          {% if perms.goals.view_goal %}
+            <a class="nav-link" href="{% url 'goals:index' %}">Objetivos</a>
+          {% endif %}
+        </li>
       </ul>
 
       <div class="d-flex gap-2">

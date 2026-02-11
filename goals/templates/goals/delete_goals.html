@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Eliminar Objetivo - MiApp{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <div class="card border-danger">
+      <div class="card-header bg-danger text-white">
+        <h2 class="mb-0">Eliminar Objetivo</h2>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-warning">
+          <strong>⚠️ Advertencia:</strong> Esta acción no se puede deshacer.
+        </div>
+
+        <h5 class="mb-3">{{ object.title }}</h5>
+
+        <div class="card mb-3 bg-light">
+          {% if object.photo_src %}
+            <div class="card-header">
+              <img src="{{ object.photo_src }}" alt="{{ object.title }}" class="img-fluid" style="max-height: 300px; width: 100%; object-fit: cover;">
+            </div>
+          {% endif %}
+          <div class="card-body">
+            <p><strong>Monto objetivo:</strong> ${{ object.target_amount }}</p>
+            <p><strong>Monto recaudado:</strong> ${{ object.amount_raised }}</p>
+            <p><strong>Stock total:</strong> {{ object.goal_stock_total }} unidades</p>
+            <p><strong>Estado:</strong> {{ object.get_status_display }}</p>
+            <p><strong>Productos asignados:</strong> {{ object.items.count }}</p>
+          </div>
+        </div>
+
+        <p class="text-danger">
+          <strong>Está a punto de eliminar este objetivo y todos sus productos asociados.</strong>
+          ¿Desea continuar?
+        </p>
+
+        <form method="post" class="mt-4">
+          {% csrf_token %}
+          <div class="d-flex gap-2 justify-content-between">
+            <a href="{% url 'goals:index' %}" class="btn btn-secondary">
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn-danger">
+              Sí, Eliminar Objetivo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

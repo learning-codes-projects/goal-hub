@@ -30,7 +30,7 @@ urlpatterns = [
     path("my_profile/", include("my_profile.urls")),
     path("products/", include("products.urls")),
     path("cart/", include("cart.urls")),
-
+    path("goals/", include("goals.urls")),
 ]
 
 if settings.DEBUG: 

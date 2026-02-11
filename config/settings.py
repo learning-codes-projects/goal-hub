@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     "widget_tweaks",
     "my_profile",
     "products",
-    "cart"
+    "cart",
+    "goals"
 
 ]
 

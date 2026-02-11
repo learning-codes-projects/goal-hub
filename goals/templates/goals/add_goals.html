@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Crear Objetivo - MiApp{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h2 class="mb-0">Crear Nuevo Objetivo</h2>
+      </div>
+      <div class="card-body">
+        <form method="post" class="needs-validation" novalidate enctype="multipart/form-data">
+          {% csrf_token %}
+
+          <!-- Goal Form -->
+          <div class="mb-3">
+            <label for="{{ form.title.id_for_label }}" class="form-label">
+              {{ form.title.label }}
+            </label>
+            {{ form.title }}
+            {% if form.title.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.title.errors }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ form.photo_file.id_for_label }}" class="form-label">
+              {{ form.photo_file.label }}
+            </label>
+            {{ form.photo_file }}
+            {% if form.photo_file.errors %}
+              <div class="invalid-feedback d-block">
+                {{ form.photo_file.errors }}
+              </div>
+            {% endif %}
+            <small class="text-muted d-block mt-2">Formatos soportados: JPG, PNG. Tamaño máximo: 5MB</small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="{{ form.target_amount.id_for_label }}" class="form-label">
+                  {{ form.target_amount.label }}
+                </label>
+                {{ form.target_amount }}
+                {% if form.target_amount.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.target_amount.errors }}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="{{ form.complete_when.id_for_label }}" class="form-label">
+                  {{ form.complete_when.label }}
+                </label>
+                {{ form.complete_when }}
+                {% if form.complete_when.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.complete_when.errors }}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Products Formset -->
+          <hr />
+          <h5 class="mb-3">Productos del Objetivo</h5>
+
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 40%;">Producto</th>
+                  <th style="width: 25%;">Stock</th>
+                  <th style="width: 25%;">Precio Unitario</th>
+                  <th style="width: 10%;">Eliminar</th>
+                </tr>
+              </thead>
+              <tbody id="formset-container">
+                {{ formset.management_form }}
+
+                {% for form in formset %}
+                  {% if not form.instance.pk or not form.DELETE.value %}
+                    <tr class="formset-row">
+                      <td>
+                        {{ form.product }}
+                        {% if form.product.errors %}
+                          <div class="invalid-feedback d-block">
+                            {{ form.product.errors }}
+                          </div>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {{ form.goal_stock }}
+                        {% if form.goal_stock.errors %}
+                          <div class="invalid-feedback d-block">
+                            {{ form.goal_stock.errors }}
+                          </div>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {{ form.unit_price }}
+                        {% if form.unit_price.errors %}
+                          <div class="invalid-feedback d-block">
+                            {{ form.unit_price.errors }}
+                          </div>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <div class="form-check">
+                          {{ form.DELETE }}
+                        </div>
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+
+            {% if formset.non_form_errors %}
+              <div class="alert alert-danger">
+                {{ formset.non_form_errors }}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Buttons -->
+          <div class="d-flex gap-2 justify-content-between mt-4">
+            <a href="{% url 'goals:index' %}" class="btn btn-secondary">
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+              Crear Objetivo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Validación de Bootstrap
+  (function () {
+    'use strict';
+    window.addEventListener('load', function () {
+      var forms = document.querySelectorAll('.needs-validation');
+      Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add('was-validated');
+        }, false);
+      });
+    });
+  })();
+</script>
+{% endblock %}

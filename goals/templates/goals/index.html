@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mis Objetivos - MiApp{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center">
+      <h1>Mis Objetivos</h1>
+      {% if perms.goals.add_goal %}
+      <a href="{% url 'goals:create' %}" class="btn btn-primary">
+        ➕ Crear Nuevo Objetivo
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if goals %}
+  <div class="row">
+    {% for goal in goals %}
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+          <!-- Card Image -->
+          {% if goal.photo_src %}
+            <img src="{{ goal.photo_src }}" alt="{{ goal.title }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+          {% else %}
+            <div style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center;">
+              <span class="text-white fs-3">📋</span>
+            </div>
+          {% endif %}
+
+          <!-- Card Header with Status Badge -->
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">{{ goal.title }}</h5>
+            {% if goal.status == 'active' %}
+              <span class="badge bg-success">Activo</span>
+            {% elif goal.status == 'achieved' %}
+              <span class="badge bg-primary">Cumplido</span>
+            {% elif goal.status == 'exhausted' %}
+              <span class="badge bg-warning">Sin Stock</span>
+            {% else %}
+              <span class="badge bg-secondary">Cancelado</span>
+            {% endif %}
+          </div>
+
+          <!-- Card Body -->
+          <div class="card-body">
+            <!-- Monto -->
+            <div class="mb-3">
+              <small class="text-muted">Monto Objetivo</small>
+              <div class="progress" style="height: 20px;">
+                {% if goal.target_amount > 0 %}
+                  {% widthratio goal.amount_raised goal.target_amount 100 as percentage %}
+                  <div 
+                    class="progress-bar {% if percentage >= 100 %}bg-success{% elif percentage >= 50 %}bg-info{% else %}bg-warning{% endif %}"
+                    role="progressbar" 
+                    style="width: {{ percentage }}%;" 
+                    aria-valuenow="{{ percentage }}" 
+                    aria-valuemin="0" 
+                    aria-valuemax="100"
+                  >
+                    {{ percentage }}%
+                  </div>
+                {% else %}
+                  <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%;">
+                    Sin objetivo
+                  </div>
+                {% endif %}
+              </div>
+              <small class="text-muted d-block mt-1">
+                ${{ goal.amount_raised }} / ${{ goal.target_amount }}
+              </small>
+            </div>
+
+            <!-- Stock -->
+            <div class="mb-3">
+              <small class="text-muted">Stock Total del Objetivo</small>
+              <p class="mb-0">
+                <strong>{{ goal.goal_stock_total }}</strong> unidades
+              </p>
+            </div>
+
+            <!-- Productos -->
+            <div class="mb-3">
+              <small class="text-muted">Productos Asignados</small>
+              <p class="mb-0">
+                <strong>{{ goal.items.count }}</strong> productos
+              </p>
+            </div>
+
+            <!-- Monto Potencial -->
+            <div class="mb-3">
+              <small class="text-muted">Monto Potencial (si vende todo)</small>
+              <p class="mb-0 text-success">
+                <strong>${{ goal.potential_amount }}</strong>
+              </p>
+            </div>
+
+            <!-- Tipo de Completitud -->
+            <div class="mb-3">
+              <small class="text-muted">Se completa por:</small>
+              <p class="mb-0">
+                <span class="badge bg-info">
+                  {% if goal.complete_when == 'amount' %}
+                    Monto alcanzado
+                  {% elif goal.complete_when == 'stock' %}
+                    Stock agotado
+                  {% else %}
+                    Monto o Stock
+                  {% endif %}
+                </span>
+              </p>
+            </div>
+
+            <!-- Fechas -->
+            <div class="mb-3">
+              <small class="text-muted d-block">
+                Creado: {{ goal.created_at|date:"d/m/Y H:i" }}
+              </small>
+              {% if goal.achieved_at %}
+                <small class="text-muted d-block">
+                  Cumplido: {{ goal.achieved_at|date:"d/m/Y H:i" }}
+                </small>
+              {% endif %}
+              {% if goal.ended_at %}
+                <small class="text-muted d-block">
+                  Finalizado: {{ goal.ended_at|date:"d/m/Y H:i" }}
+                </small>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Card Footer with Actions -->
+          <div class="card-footer bg-light">
+            <div class="d-flex gap-2">
+              {% if perms.goals.change_goal %}
+              <a 
+                href="{% url 'goals:edit' goal.pk %}" 
+                class="btn btn-sm btn-outline-warning flex-grow-1"
+              >
+                ✏️ Editar
+              </a>
+              {% endif %}
+              {% if perms.goals.delete_goal %}
+              <a 
+                href="{% url 'goals:delete' goal.pk %}" 
+                class="btn btn-sm btn-outline-danger flex-grow-1"
+              >
+                🗑️ Eliminar
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-info" role="alert">
+    <h4 class="alert-heading">No tienes objetivos creados</h4>
+    <p>
+      Comienza a crear un objetivo para organizar tus productos y campañas.
+    </p>
+    <hr />
+    {% if perms.goals.add_goal %}
+    <p class="mb-0">
+      <a href="{% url 'goals:create' %}" class="btn btn-primary">
+        ➕ Crear tu Primer Objetivo
+      </a>
+    </p>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}
