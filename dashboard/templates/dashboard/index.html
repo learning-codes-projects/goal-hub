@@ -3,14 +3,14 @@
 {% block content %}
   <header class="hero py-5 text-center">
     <div class="container">
-      <img src="{% static 'images/goalhub-logo.svg' %}"
+      <img src="{% static 'images/goalhub-logo.png' %}"
            alt="GoalHub logo"
            class="logo mb-3" />
       <h1 class="h3 mb-1" style="color: var(--primary-color);">Bienvenido a GoalHub</h1>
       <p class="lead mb-4">
         GoalHub es una plataforma para contribuir en cumplir objetivos mediante la compra de productos.
       </p>
-      <a href="#" class="btn btn-primary btn-lg">Explorar objetivos</a>
+      <a href="{% url 'goals:all' %}" class="btn btn-primary">Explorar objetivos</a>
     </div>
   </header>
   <main class="container py-5">
