@@ -1,18 +1,22 @@
 # cart/views.py
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
+from django.views.generic import ListView, DetailView
 
 
 from .forms import CartItemCreateForm, CartItemUpdateForm
+from .models import Order, OrderItem
 
 from .services import (
     CartServiceError,
     add_item,
     get_or_create_active_cart,
     remove_item,
-    set_item_quantity
+    set_item_quantity,
+    checkout,
 )
 
 
@@ -102,3 +106,36 @@ def cart_remove(request, product_id: int):
     remove_item(request.user, product_id=product_id)
     messages.info(request, "Producto eliminado del carrito.")
     return redirect("cart:detail")
+
+@require_POST
+@login_required
+def cart_checkout(request):
+    """Procesar el checkout del carrito activo."""
+    try:
+        order = checkout(request.user)
+        messages.success(request, f"✓ Pedido realizado exitosamente. Pedido #{order.id}")
+        return redirect("cart:order_list")
+    except CartServiceError as e:
+        messages.error(request, str(e))
+        return redirect("cart:detail")
+
+
+class OrderListView(LoginRequiredMixin, ListView):
+    """Lista de órdenes realizadas por el usuario."""
+    model = Order
+    template_name = "cart/order_list.html"
+    context_object_name = "orders"
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items__product", "items__goal")
+
+
+class OrderDetailView(LoginRequiredMixin, DetailView):
+    """Detalle de una orden específica."""
+    model = Order
+    template_name = "cart/order_detail.html"
+    context_object_name = "order"
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items__product", "items__goal")

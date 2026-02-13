@@ -31,6 +31,13 @@ class GoalListView(LoginRequiredMixin, RecipientRequiredMixin, ListView):
     def get_queryset(self):
         # Solo goals del usuario logueado
         return Goal.objects.filter(owner=self.request.user).order_by("-created_at")
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Agregar información de progreso a cada goal
+        for goal in context["goals"]:
+            goal.progress = goal.get_completion_progress()
+        return context
 
 class AllGoalsView(LoginRequiredMixin, ListView):
     model = Goal
@@ -41,6 +48,13 @@ class AllGoalsView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         # Todos los objetivos activos, ordenados por fecha de creación
         return Goal.objects.filter(status=Goal.Status.ACTIVE).order_by("-created_at")
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Agregar información de progreso a cada goal
+        for goal in context["goals"]:
+            goal.progress = goal.get_completion_progress()
+        return context
 
 
 class GoalProductsListView(LoginRequiredMixin, ListView):
@@ -78,10 +92,11 @@ class GoalProductDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["form"] = GoalProductAddToCartForm()
         context["max_quantity"] = self.object.goal_stock
+        context["goal_progress"] = self.object.goal.get_completion_progress()
         return context
 
     def post(self, request, *args, **kwargs):
-        """Manejar agregar al carrito."""
+        """Manejar agregar al carrito. El stock del GoalProduct se decrementa al confirmar el pedido."""
         self.object = self.get_object()
         form = GoalProductAddToCartForm(request.POST)
         
@@ -101,10 +116,6 @@ class GoalProductDetailView(LoginRequiredMixin, DetailView):
             
             try:
                 add_item(request.user, product_id=self.object.product.id, quantity=quantity)
-                
-                # Decrementar stock del GoalProduct
-                self.object.goal_stock -= quantity
-                self.object.save(update_fields=["goal_stock"])
                 
                 messages.success(
                     request,
@@ -140,7 +151,9 @@ class GoalProductsByGoalView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         goal_id = self.kwargs.get("goal_id")
-        context["goal"] = Goal.objects.get(id=goal_id, status=Goal.Status.ACTIVE)
+        goal = Goal.objects.get(id=goal_id, status=Goal.Status.ACTIVE)
+        context["goal"] = goal
+        context["goal_progress"] = goal.get_completion_progress()
         return context
 
 
@@ -181,6 +194,9 @@ class GoalCreateView(LoginRequiredMixin, RecipientRequiredMixin, CreateView):
         formset.instance = self.object
         formset.save()
 
+        # Evaluar si el goal está completo basado en lo que hubiese sido asignado
+        self.object.evaluate_completion()
+
         messages.success(self.request, "Objetivo creado.")
         return redirect("goals:index")  # <-- redirige al index
 
@@ -217,6 +233,9 @@ class GoalUpdateView(LoginRequiredMixin, RecipientRequiredMixin, UpdateView):
         self.object = form.save()
         formset.instance = self.object
         formset.save()
+
+        # Evaluar si el goal está completo basado en los cambios
+        self.object.evaluate_completion()
 
         messages.success(self.request, "Objetivo actualizado.")
         return redirect("goals:index")  # <-- redirige al index

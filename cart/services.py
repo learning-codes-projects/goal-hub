@@ -1,10 +1,12 @@
 # cart/services.py
 from decimal import Decimal
 from django.db import transaction, IntegrityError
-
+from django.utils import timezone
 
 from products.models import Product
-from .models import Cart, CartItem
+from goals.models import GoalProduct, Goal
+from .models import Cart, CartItem, Order, OrderItem
+
 
 
 class CartServiceError(Exception):
@@ -114,3 +116,78 @@ def recalc_totals(cart: Cart) -> None:
     cart.subtotal = subtotal
     cart.total = subtotal
     cart.save(update_fields=["subtotal", "total", "updated_at"])
+
+@transaction.atomic
+def checkout(user) -> Order:
+    """
+    Procesa el checkout del carrito activo:
+    1. Crea una Order con sus OrderItems
+    2. Actualiza amount_raised en los Goals relacionados
+    3. Evalúa si los Goals se completaron
+    4. Marca el carrito como CHECKED_OUT
+    5. Decrementa el stock de los productos
+    """
+    cart = get_or_create_active_cart(user)
+
+    if not cart.items.exists():
+        raise CartServiceError("El carrito está vacío.")
+
+    # Crear la Order
+    order = Order.objects.create(
+        user=user,
+        cart=cart,
+        subtotal=cart.subtotal,
+        total=cart.total,
+        status=Order.Status.COMPLETED
+    )
+
+    # Procesar cada ítem del carrito
+    for cart_item in cart.items.select_related("product").all():
+        product = cart_item.product
+        quantity = cart_item.quantity
+        unit_price = cart_item.unit_price
+
+        # Buscar si este producto vino de un GoalProduct
+        goal_related = None
+        goal_product = None
+        goal_products = GoalProduct.objects.select_for_update().filter(product=product).select_related("goal")
+        
+        if goal_products.exists():
+            # Si hay multiple GoalProducts del mismo producto, usar el primero
+            goal_product = goal_products.first()
+            goal_related = goal_product.goal
+
+        # Crear OrderItem
+        order_item = OrderItem.objects.create(
+            order=order,
+            product=product,
+            goal=goal_related,
+            quantity=quantity,
+            unit_price=unit_price
+        )
+
+        # Actualizar amount_raised en el Goal si existe.
+        # Nota: no decrementamos `GoalProduct.goal_stock` aquí para preservar
+        # el "monto potencial" y el "monto objetivo" calculados a partir
+        # del stock inicial asignado al goal. Esto evita que esos valores
+        # disminuyan cuando se concreta una compra.
+        if goal_related and goal_product:
+            amount_to_add = Decimal(str(quantity)) * unit_price
+            goal_related.amount_raised += amount_to_add
+            goal_related.save(update_fields=["amount_raised", "updated_at"])
+
+            # Evaluar si el goal se completó (por monto).
+            # No evaluamos EXHAUSTED por falta de stock aquí porque
+            # `goal_stock` permanece como el stock original asignado al goal.
+            goal_related.evaluate_completion()
+
+        # Decrementar stock del producto
+        product.stock -= quantity
+        product.save(update_fields=["stock"])
+
+    # Marcar carrito como CHECKED_OUT
+    cart.status = Cart.Status.CHECKED_OUT
+    cart.checked_out_at = timezone.now()
+    cart.save(update_fields=["status", "checked_out_at"])
+
+    return order

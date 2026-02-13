@@ -40,34 +40,8 @@
             <small class="text-muted d-block mt-2">Formatos soportados: JPG, PNG. Tamaño máximo: 5MB</small>
           </div>
 
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="{{ form.target_amount.id_for_label }}" class="form-label">
-                  {{ form.target_amount.label }}
-                </label>
-                {{ form.target_amount }}
-                {% if form.target_amount.errors %}
-                  <div class="invalid-feedback d-block">
-                    {{ form.target_amount.errors }}
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="{{ form.complete_when.id_for_label }}" class="form-label">
-                  {{ form.complete_when.label }}
-                </label>
-                {{ form.complete_when }}
-                {% if form.complete_when.errors %}
-                  <div class="invalid-feedback d-block">
-                    {{ form.complete_when.errors }}
-                  </div>
-                {% endif %}
-              </div>
-            </div>
+          <div class="alert alert-info">
+            <strong>📌 Nota:</strong> El monto objetivo se calculará automáticamente basado en el stock y precio de los productos que agregues.
           </div>
 
           <!-- Products Formset -->
@@ -86,10 +60,10 @@
               <thead class="table-light">
                 <tr>
                   <th width="40%">Producto</th>
-                  <th width="20%">Stock</th>
+                  <th width="15%">Stock</th>
                   <th width="20%">Precio Unitario</th>
                   <th width="15%">Subtotal</th>
-                  <th width="5%">Eliminar</th>
+                  <th width="10%">Eliminar</th>
                 </tr>
               </thead>
               <tbody id="formset-container">
@@ -114,12 +88,7 @@
                       {% endif %}
                     </td>
                     <td>
-                      {{ form.unit_price }}
-                      {% if form.unit_price.errors %}
-                        <div class="invalid-feedback d-block" style="font-size: 0.85rem;">
-                          {{ form.unit_price.errors.0 }}
-                        </div>
-                      {% endif %}
+                      <span class="product-price text-muted">-</span>
                     </td>
                     <td>
                       <span class="subtotal-value text-muted">$0.00</span>
@@ -218,29 +187,77 @@
     totalForms.value = newFormIndex + 1;
 
     // Agregar listener para calcular subtotales
-    attachSubtotalCalculator(newRow);
+    attachProductPriceCalculator(newRow);
   });
 
-  // Calcular subtotales dinámicamente
-  function attachSubtotalCalculator(row) {
+  // Calcular precio y subtotales dinámicamente
+  function attachProductPriceCalculator(row) {
+    const productSelect = row.querySelector('select[name*=product]');
     const stockInput = row.querySelector('input[name*=goal_stock]');
-    const priceInput = row.querySelector('input[name*=unit_price]');
+    const priceSpan = row.querySelector('.product-price');
     const subtotalSpan = row.querySelector('.subtotal-value');
+
+    // Cargar precio del producto cuando se selecciona
+    if (productSelect) {
+      productSelect.addEventListener('change', function () {
+        const productId = this.value;
+        if (productId) {
+          // Obtener el precio del atributo data-price de la opción seleccionada
+          const selectedOption = this.options[this.selectedIndex];
+          let productPrice = selectedOption.dataset.price;
+          
+          if (!productPrice) {
+            // Si no existe data-price, intentar obtener de manera alternativa
+            productPrice = selectedOption.getAttribute('data-price');
+          }
+          
+          if (productPrice) {
+            priceSpan.textContent = '$' + parseFloat(productPrice).toFixed(2);
+            calculateSubtotal();
+          } else {
+            console.warn('No se encontró precio para el producto ' + productId);
+            priceSpan.textContent = '-';
+            subtotalSpan.textContent = '$0.00';
+          }
+        } else {
+          priceSpan.textContent = '-';
+          subtotalSpan.textContent = '$0.00';
+        }
+      });
+
+      // Trigger change para cargar el precio inicial si hay un producto pre-seleccionado
+      productSelect.dispatchEvent(new Event('change'));
+    }
 
     function calculateSubtotal() {
       const stock = parseFloat(stockInput.value) || 0;
-      const price = parseFloat(priceInput.value) || 0;
+      const priceText = priceSpan.textContent.replace('$', '').trim();
+      const price = priceText === '-' ? 0 : parseFloat(priceText) || 0;
       const subtotal = (stock * price).toFixed(2);
       subtotalSpan.textContent = '$' + subtotal;
+      updateTargetAmount();
     }
 
-    if (stockInput) stockInput.addEventListener('change', calculateSubtotal);
-    if (priceInput) priceInput.addEventListener('change', calculateSubtotal);
+    if (stockInput) {
+      stockInput.addEventListener('change', calculateSubtotal);
+      stockInput.addEventListener('keyup', calculateSubtotal);
+      stockInput.addEventListener('input', calculateSubtotal);
+    }
+  }
+
+  // Calcular target_amount total
+  function updateTargetAmount() {
+    let total = 0;
+    document.querySelectorAll('.subtotal-value').forEach(function (span) {
+      const value = parseFloat(span.textContent.replace('$', '')) || 0;
+      total += value;
+    });
+    // Por ahora solo mostramos en consola; en la vista de edición lo guardaremos
   }
 
   // Aplicar calculator a todas las filas existentes
   document.querySelectorAll('.formset-row').forEach(function (row) {
-    attachSubtotalCalculator(row);
+    attachProductPriceCalculator(row);
   });
 
   // Manejar eliminación de filas (checkbox DELETE)

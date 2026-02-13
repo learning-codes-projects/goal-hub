@@ -81,11 +81,11 @@
               <!-- Monto Progress -->
               <p class="mb-2">
                 <strong>Monto Recaudado:</strong>
-                <span>${{ goal_product.goal.amount_raised }} / ${{ goal_product.goal.target_amount }}</span>
+                <span>${{ goal_product.goal.amount_raised }} / ${{ goal_product.goal.computed_target_amount }}</span>
               </p>
               <div class="progress mb-3" style="height: 20px;">
-                {% if goal_product.goal.target_amount > 0 %}
-                  {% widthratio goal_product.goal.amount_raised goal_product.goal.target_amount 100 as percentage %}
+                {% if goal_product.goal.computed_target_amount > 0 %}
+                  {% widthratio goal_product.goal.amount_raised goal_product.goal.computed_target_amount 100 as percentage %}
                   <div class="progress-bar {% if percentage >= 100 %}bg-success{% elif percentage >= 50 %}bg-info{% else %}bg-warning{% endif %}"
                        role="progressbar"
                        style="width: {{ percentage }}%"

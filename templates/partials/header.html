@@ -31,7 +31,8 @@
       <div class="d-flex gap-2">
         {% if request.user.is_authenticated %}
           {% if perms.cart.view_cart %}
-            <a href="{% url 'cart:detail' %}" class="btn btn-primary">Carrito</a>
+            <a href="{% url 'cart:detail' %}" class="btn btn-primary">🛒 Carrito</a>
+            <a href="{% url 'cart:order_list' %}" class="btn btn-info">📋 Mis Pedidos</a>
           {% endif %}
           <span class="navbar-text small text-muted">Hola, {{ request.user.username }}</span>
           <a class="btn btn-outline-secondary btn-sm" href="{% url 'logout' %}">Salir</a>

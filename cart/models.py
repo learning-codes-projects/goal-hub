@@ -66,3 +66,74 @@ class CartItem(models.Model):
             models.CheckConstraint(check=Q(quantity__gt=0), name="cart_qty_gt_0"),
             models.CheckConstraint(check=Q(unit_price__gte=0), name="cart_unit_price_gte_0"),
         ]
+
+class Order(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pendiente"
+        COMPLETED = "completed", "Completada"
+        CANCELED = "canceled", "Cancelada"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="orders",
+    )
+
+    cart = models.OneToOneField(
+        Cart,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order"
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["-created_at"]),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Pedido #{self.id} - {self.user.username}"
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey("products.Product", on_delete=models.CASCADE)
+
+    # Relación opcional al Goal si vino desde un GoalProduct
+    goal = models.ForeignKey(
+        "goals.Goal",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order_items"
+    )
+
+    quantity = models.PositiveIntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(check=Q(quantity__gt=0), name="order_item_qty_gt_0"),
+            models.CheckConstraint(check=Q(unit_price__gte=0), name="order_item_price_gte_0"),
+        ]
+
+    def __str__(self):
+        return f"{self.product.name} (x{self.quantity})"

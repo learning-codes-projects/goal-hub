@@ -1,10 +1,48 @@
 # goals/forms.py
 from django import forms
 from django.forms import inlineformset_factory
+from django.utils.safestring import mark_safe
 import base64
 
 from products.models import Product
 from .models import Goal, GoalProduct
+
+
+class ProductSelectWithPrice(forms.Select):
+    """Widget que renderiza un select con data-price en cada opción."""
+    
+    def render(self, name, value, attrs=None, renderer=None):
+        """Renderiza el select con atributos data-price."""
+        if attrs is None:
+            attrs = {}
+        
+        attrs.setdefault('class', 'form-select')
+        
+        # Obtener el HTML base del select
+        html = ['<select name="%s"' % name]
+        
+        # Agregar atributos
+        for key, val in attrs.items():
+            if val:
+                html.append(' %s="%s"' % (key, val))
+        
+        html.append('>')
+        
+        # Opción vacía
+        html.append('<option value="">---------</option>')
+        
+        # Productos
+        products = Product.objects.filter(is_active=True).values_list('id', 'name', 'price')
+        for product_id, product_name, price in products:
+            selected = ' selected' if str(value) == str(product_id) else ''
+            html.append(
+                '<option value="%s" data-price="%.2f"%s>%s</option>' 
+                % (product_id, float(price), selected, product_name)
+            )
+        
+        html.append('</select>')
+        
+        return mark_safe(''.join(html))
 
 
 class GoalForm(forms.ModelForm):
@@ -19,20 +57,11 @@ class GoalForm(forms.ModelForm):
 
     class Meta:
         model = Goal
-        fields = ["title", "target_amount", "complete_when"]
+        fields = ["title"]
         widgets = {
             "title": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "Nombre del objetivo"
-            }),
-            "target_amount": forms.NumberInput(attrs={
-                "class": "form-control",
-                "placeholder": "Monto objetivo",
-                "step": "0.01",
-                "min": "0"
-            }),
-            "complete_when": forms.Select(attrs={
-                "class": "form-select"
             }),
         }
 
@@ -55,26 +84,29 @@ class GoalForm(forms.ModelForm):
 class GoalProductForm(forms.ModelForm):
     product = forms.ModelChoiceField(
         queryset=Product.objects.filter(is_active=True),
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=ProductSelectWithPrice(attrs={"class": "form-select"}),
         label="Producto"
     )
 
     class Meta:
         model = GoalProduct
-        fields = ["product", "goal_stock", "unit_price"]
+        fields = ["product", "goal_stock"]
         widgets = {
             "goal_stock": forms.NumberInput(attrs={
                 "class": "form-control",
                 "placeholder": "Stock del objetivo",
-                "min": "0"
-            }),
-            "unit_price": forms.NumberInput(attrs={
-                "class": "form-control",
-                "placeholder": "Precio unitario",
-                "step": "0.01",
-                "min": "0"
+                "min": "1"
             }),
         }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Calcular unit_price automáticamente del producto
+        if instance.product:
+            instance.unit_price = instance.product.price
+        if commit:
+            instance.save()
+        return instance
 
 
 GoalProductFormSet = inlineformset_factory(

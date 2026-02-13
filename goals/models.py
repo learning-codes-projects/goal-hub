@@ -89,38 +89,40 @@ class Goal(models.Model):
         return self.title
 
     def evaluate_completion(self) -> None:
-        """
-        Evalúa el estado del goal según:
-        - monto alcanzado
-        - stock asignado al goal agotado
-        """
         if self.status in {self.Status.CANCELED, self.Status.ACHIEVED, self.Status.EXHAUSTED}:
             return
 
-        amount_ok = self.target_amount > 0 and self.amount_raised >= self.target_amount
-        out_of_stock = not self.items.filter(goal_stock__gt=0).exists()
+        # Verificar si se alcanzó el monto objetivo (calculado desde los productos asignados)
+        target_total = self.computed_target_amount
+        amount_ok = target_total > 0 and self.amount_raised >= target_total
 
-        if self.complete_when == self.CompleteWhen.AMOUNT and amount_ok:
+        # Verificar si se agotó el stock
+        out_of_stock = self.goal_stock_total == 0
+
+        # Definir estado basado en lo que ocurra primero
+        if amount_ok:
             self.status = self.Status.ACHIEVED
-
-        elif self.complete_when == self.CompleteWhen.STOCK and out_of_stock:
+        elif out_of_stock:
             self.status = self.Status.EXHAUSTED
 
-        elif self.complete_when == self.CompleteWhen.EITHER and (amount_ok or out_of_stock):
-            self.status = self.Status.ACHIEVED if amount_ok else self.Status.EXHAUSTED
+        # Guardar cambios si hay un cambio de estado
+        if self.status != self.Status.ACTIVE:
+            from django.utils import timezone
+            self.achieved_at = timezone.now()
+            self.save(update_fields=["status", "achieved_at", "updated_at"])
 
     @property
     def goal_stock_total(self) -> int:
         """Stock total asignado a este goal (suma de todos los GoalProduct.goal_stock)."""
         return int(self.items.aggregate(total=models.Sum("goal_stock"))["total"] or 0)
 
+
     @property
-    def potential_amount(self):
+    def computed_target_amount(self):
         """
-        Monto potencial si se consume todo el stock del goal:
+        Monto objetivo calculado a partir de los productos asignados al goal:
         SUM(goal_stock * unit_price)
         """
-        # Nota: ExpressionWrapper para calcular en DB sin iterar en Python.
         expr = models.ExpressionWrapper(
             models.F("goal_stock") * models.F("unit_price"),
             output_field=models.DecimalField(max_digits=14, decimal_places=2),
@@ -135,6 +137,44 @@ class Goal(models.Model):
         if self.photo:
             return self.photo.url
         return ""
+    
+    def get_status_display_verbose(self) -> str:
+        """
+        Devuelve descripción verbal del estado del goal.
+        """
+        status_labels = {
+            self.Status.ACTIVE: "Activo - Sin completar",
+            self.Status.ACHIEVED: "Completado ✓ (Monto alcanzado)",
+            self.Status.EXHAUSTED: "Finalizado (Sin stock)",
+            self.Status.CANCELED: "Cancelado",
+        }
+        return status_labels.get(self.status, self.get_status_display())
+    
+    def get_completion_progress(self) -> dict:
+        """
+        Retorna un diccionario con el progreso de cumplimiento del goal:
+        - amount_raised: monto ya recaudado
+        - target_amount: monto objetivo calculado desde los productos
+        - goal_stock_total: cantidad total de items sin vender
+        - percentage: porcentaje de completitud (0-100)
+        - is_complete: booleano si está completado
+        - status_verbose: descripción del estado
+        """
+        target = self.computed_target_amount
+        stock = self.goal_stock_total
+
+        percentage = 0
+        if target > 0:
+            percentage = min(100, int((float(self.amount_raised) / float(target)) * 100))
+
+        return {
+            "amount_raised": self.amount_raised,
+            "target_amount": target,
+            "goal_stock_total": stock,
+            "percentage": percentage,
+            "is_complete": self.status in {self.Status.ACHIEVED, self.Status.EXHAUSTED},
+            "status_verbose": self.get_status_display_verbose(),
+        }
 
 
 class GoalProduct(models.Model):

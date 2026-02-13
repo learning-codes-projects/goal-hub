@@ -51,8 +51,8 @@
               <div class="mb-3">
                 <small class="text-muted">Monto Objetivo</small>
                 <div class="progress" style="height: 20px;">
-                  {% if goal.target_amount > 0 %}
-                    {% widthratio goal.amount_raised goal.target_amount 100 as percentage %}
+                  {% if goal.computed_target_amount > 0 %}
+                    {% widthratio goal.amount_raised goal.computed_target_amount 100 as percentage %}
                     <div class="progress-bar {% if percentage >= 100 %}bg-success{% elif percentage >= 50 %}bg-info{% else %}bg-warning{% endif %}"
                          role="progressbar"
                          style="width: {{ percentage }}%"
@@ -65,7 +65,7 @@
                          style="width: 0%">Sin objetivo</div>
                   {% endif %}
                 </div>
-                <small class="text-muted d-block mt-1">${{ goal.amount_raised }} / ${{ goal.target_amount }}</small>
+                <small class="text-muted d-block mt-1">${{ goal.amount_raised }} / ${{ goal.computed_target_amount }}</small>
               </div>
               <!-- Stock -->
               <div class="mb-3">
@@ -81,11 +81,11 @@
                   <strong>{{ goal.items.count }}</strong> productos
                 </p>
               </div>
-              <!-- Monto Potencial -->
+              <!-- Monto Objetivo calculado desde productos -->
               <div class="mb-3">
-                <small class="text-muted">Monto Potencial (si vende todo)</small>
+                <small class="text-muted">Monto Objetivo (total productos)</small>
                 <p class="mb-0 text-success">
-                  <strong>${{ goal.potential_amount }}</strong>
+                  <strong>${{ goal.computed_target_amount }}</strong>
                 </p>
               </div>
               <!-- Tipo de Completitud -->
