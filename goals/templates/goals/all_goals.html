@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Todos los Objetivos - MiApp{% endblock %}
+{% block content %}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <h1>Todos los Objetivos Disponibles</h1>
+        {% if perms.goals.add_goal %}
+          <a href="{% url 'goals:index' %}" class="btn btn-outline-primary">← Mi Panel de Objetivos</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% if goals %}
+    <div class="row">
+      {% for goal in goals %}
+        <div class="col-md-6 col-lg-4 mb-4">
+          <div class="card h-100 shadow-sm">
+            <!-- Card Image -->
+            {% if goal.photo_src %}
+              <img src="{{ goal.photo_src }}"
+                   alt="{{ goal.title }}"
+                   class="card-img-top"
+                   style="height: 200px;
+                          object-fit: cover">
+            {% else %}
+              <div style="height: 200px;
+                          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                          display: flex;
+                          align-items: center;
+                          justify-content: center">
+                <span class="text-white fs-3">📋</span>
+              </div>
+            {% endif %}
+            <!-- Card Header with Status Badge -->
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">{{ goal.title }}</h5>
+              <span class="badge bg-success">Activo</span>
+            </div>
+            <!-- Card Body -->
+            <div class="card-body">
+              <!-- Owner Info -->
+              <div class="mb-3">
+                <small class="text-muted">Propietario</small>
+                <p class="mb-0">
+                  <strong>{{ goal.owner.username }}</strong>
+                </p>
+              </div>
+              <!-- Monto -->
+              <div class="mb-3">
+                <small class="text-muted">Monto Objetivo</small>
+                <div class="progress" style="height: 20px;">
+                  {% if goal.target_amount > 0 %}
+                    {% widthratio goal.amount_raised goal.target_amount 100 as percentage %}
+                    <div class="progress-bar {% if percentage >= 100 %}bg-success{% elif percentage >= 50 %}bg-info{% else %}bg-warning{% endif %}"
+                         role="progressbar"
+                         style="width: {{ percentage }}%"
+                         aria-valuenow="{{ percentage }}"
+                         aria-valuemin="0"
+                         aria-valuemax="100">{{ percentage }}%</div>
+                  {% else %}
+                    <div class="progress-bar bg-secondary"
+                         role="progressbar"
+                         style="width: 0%">Sin objetivo</div>
+                  {% endif %}
+                </div>
+                <small class="text-muted d-block mt-1">${{ goal.amount_raised }} / ${{ goal.target_amount }}</small>
+              </div>
+              <!-- Stock -->
+              <div class="mb-3">
+                <small class="text-muted">Stock Disponible</small>
+                <p class="mb-0">
+                  <strong>{{ goal.goal_stock_total }}</strong> unidades
+                </p>
+              </div>
+              <!-- Productos -->
+              <div class="mb-3">
+                <small class="text-muted">Productos Asignados</small>
+                <p class="mb-0">
+                  <strong>{{ goal.items.count }}</strong> productos
+                </p>
+              </div>
+              <!-- Monto Potencial -->
+              <div class="mb-3">
+                <small class="text-muted">Monto Potencial (si vende todo)</small>
+                <p class="mb-0 text-success">
+                  <strong>${{ goal.potential_amount }}</strong>
+                </p>
+              </div>
+              <!-- Tipo de Completitud -->
+              <div class="mb-3">
+                <small class="text-muted">Se completa por:</small>
+                <p class="mb-0">
+                  <span class="badge bg-info">
+                    {% if goal.complete_when == 'amount' %}
+                      Monto alcanzado
+                    {% elif goal.complete_when == 'stock' %}
+                      Stock agotado
+                    {% else %}
+                      Monto o Stock
+                    {% endif %}
+                  </span>
+                </p>
+              </div>
+              <!-- Fechas -->
+              <div class="mb-3">
+                <small class="text-muted d-block">Creado: {{ goal.created_at|date:"d/m/Y H:i" }}</small>
+              </div>
+            </div>
+            <!-- Card Footer with Actions -->
+            <div class="card-footer bg-light">
+              <a href="{% url 'goals:goal_products' goal.pk %}"
+                 class="btn btn-sm btn-primary w-100">🛒 Ver Productos</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <!-- Paginación -->
+    {% if is_paginated %}
+      <nav aria-label="Paginación" class="mt-5">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1">Primera</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">← Anterior</a>
+            </li>
+          {% endif %}
+          <li class="page-item active">
+            <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+          </li>
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente →</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="alert alert-info" role="alert">
+      <h4 class="alert-heading">No hay objetivos disponibles</h4>
+      <p>En este momento no hay objetivos activos para explorar. ¡Vuelve pronto!</p>
+      <hr />
+      <p class="mb-0">
+        {% if perms.goals.add_goal %}
+          <a href="{% url 'goals:index' %}" class="btn btn-primary">← Volver a Mi Panel</a>
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+{% endblock %}

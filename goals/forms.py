@@ -81,6 +81,20 @@ GoalProductFormSet = inlineformset_factory(
     Goal,
     GoalProduct,
     form=GoalProductForm,
-    extra=1,
+    extra=3,
     can_delete=True
 )
+
+
+class GoalProductAddToCartForm(forms.Form):
+    """Formulario para agregar un producto Goal al carrito."""
+    quantity = forms.IntegerField(
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(attrs={
+            "class": "form-control",
+            "placeholder": "Cantidad",
+            "min": "1"
+        }),
+        label="Cantidad"
+    )

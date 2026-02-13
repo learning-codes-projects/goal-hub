@@ -25,7 +25,17 @@
         </li>
         <li class="nav-item">
           {% if perms.goals.view_goal %}
-            <a class="nav-link" href="{% url 'goals:index' %}">Objetivos</a>
+            <a class="nav-link" href="{% url 'goals:catalog' %}">Catálogo Goals</a>
+          {% endif %}
+        </li>
+        <li class="nav-item">
+          {% if perms.goals.add_goal %}
+            <a class="nav-link" href="{% url 'goals:index' %}">Mis Objetivos</a>
+          {% endif %}
+        </li>
+        <li class="nav-item">
+          {% if perms.goals.view_goal %}
+            <a class="nav-link" href="{% url 'goals:all' %}">Explorar Objetivos</a>
           {% endif %}
         </li>
       </ul>
