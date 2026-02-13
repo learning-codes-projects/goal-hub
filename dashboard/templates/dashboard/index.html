@@ -1,1 +1,54 @@
 {% extends "base.html" %}
+{% load static %}
+{% block content %}
+  <header class="hero py-5 text-center">
+    <div class="container">
+      <img src="{% static 'images/goalhub-logo.svg' %}"
+           alt="GoalHub logo"
+           class="logo mb-3" />
+      <h1 class="h3 mb-1" style="color: var(--primary-color);">Bienvenido a GoalHub</h1>
+      <p class="lead mb-4">
+        GoalHub es una plataforma para contribuir en cumplir objetivos mediante la compra de productos.
+      </p>
+      <a href="#" class="btn btn-primary btn-lg">Explorar objetivos</a>
+    </div>
+  </header>
+  <main class="container py-5">
+    <section aria-labelledby="how-it-works">
+      <h2 id="how-it-works" class="mb-4">Cómo funciona</h2>
+      <p class="mb-4">
+        Sigue estos sencillos pasos para ayudar a cumplir objetivos comprando productos que contribuyen directamente a las metas.
+      </p>
+      <ol class="steps row g-3">
+        <li class="col-12 col-md-6 d-flex align-items-start">
+          <div class="step-number me-3">1</div>
+          <div>
+            <h3 class="h6 mb-1">Seleccionar objetivos</h3>
+            <p class="mb-0 text-muted">Elige las metas que te importan y conoce qué productos las apoyan.</p>
+          </div>
+        </li>
+        <li class="col-12 col-md-6 d-flex align-items-start">
+          <div class="step-number me-3">2</div>
+          <div>
+            <h3 class="h6 mb-1">Comprar productos</h3>
+            <p class="mb-0 text-muted">Adquiere productos cuyo importe contribuye a las metas seleccionadas.</p>
+          </div>
+        </li>
+        <li class="col-12 col-md-6 d-flex align-items-start">
+          <div class="step-number me-3">3</div>
+          <div>
+            <h3 class="h6 mb-1">Contribuir a metas</h3>
+            <p class="mb-0 text-muted">Tu compra genera una contribución que acerca la meta a su cumplimiento.</p>
+          </div>
+        </li>
+        <li class="col-12 col-md-6 d-flex align-items-start">
+          <div class="step-number me-3">4</div>
+          <div>
+            <h3 class="h6 mb-1">Ayudar a completar los objetivos</h3>
+            <p class="mb-0 text-muted">Sigue el progreso y celebra cuando una meta se alcance gracias a la comunidad.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+  </main>
+{% endblock %}
