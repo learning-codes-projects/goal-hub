@@ -60,7 +60,7 @@ class AllGoalsView(LoginRequiredMixin, ListView):
 class GoalProductsListView(LoginRequiredMixin, ListView):
     """
     Catálogo de productos disponibles en Goals.
-    Solo muestra GoalProducts con stock > 0 y goal activo.
+    Solo muestra GoalProducts con stock disponible > 0 y goal activo.
     """
     model = GoalProduct
     template_name = "goals/goal_products_list.html"
@@ -68,8 +68,8 @@ class GoalProductsListView(LoginRequiredMixin, ListView):
     paginate_by = 12
 
     def get_queryset(self):
+        # ✅ Se filtra por goal_stock__gt=0 pero se mostrará goal_stock_available en templates
         return GoalProduct.objects.filter(
-            goal_stock__gt=0,
             goal__status=Goal.Status.ACTIVE
         ).select_related("goal", "product").order_by("-goal__created_at", "position")
 
@@ -84,38 +84,56 @@ class GoalProductDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return GoalProduct.objects.filter(
-            goal_stock__gt=0,
             goal__status=Goal.Status.ACTIVE
         ).select_related("goal", "product")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["form"] = GoalProductAddToCartForm()
-        context["max_quantity"] = self.object.goal_stock
+        # ✅ Usar goal_stock_available en lugar de goal_stock
+        context["max_quantity"] = self.object.goal_stock_available
         context["goal_progress"] = self.object.goal.get_completion_progress()
         return context
 
     def post(self, request, *args, **kwargs):
-        """Manejar agregar al carrito. El stock del GoalProduct se decrementa al confirmar el pedido."""
+        """Manejar agregar al carrito."""
         self.object = self.get_object()
         form = GoalProductAddToCartForm(request.POST)
         
         if form.is_valid():
             quantity = form.cleaned_data["quantity"]
             
-            # Validar que no supere el stock disponible
-            if quantity > self.object.goal_stock:
+            # ✅ Validar contra stock DISPONIBLE
+            if quantity > self.object.goal_stock_available:
                 messages.error(
                     request,
-                    f"No hay suficiente stock. Disponible: {self.object.goal_stock}"
+                    f"❌ Stock insuficiente. Disponible: {self.object.goal_stock_available} unidades. "
+                    f"Tu cantidad: {quantity}."
                 )
-                return self.get(request, *args, **kwargs)
+                context = self.get_context_data(object=self.object)
+                context["form"] = form
+                return self.render_to_response(context)
+            
+            # ✅ Validar que haya al menos 1 unidad disponible
+            if self.object.goal_stock_available <= 0:
+                messages.error(
+                    request,
+                    f"❌ No hay stock disponible para {self.object.product.name}"
+                )
+                context = self.get_context_data(object=self.object)
+                context["form"] = form
+                return self.render_to_response(context)
             
             # Agregar al carrito usando el servicio del cart
             from cart.services import add_item, CartServiceError
             
             try:
-                add_item(request.user, product_id=self.object.product.id, quantity=quantity)
+                add_item(
+                    request.user, 
+                    product_id=self.object.product.id, 
+                    quantity=quantity,
+                    goal_id=self.object.goal.id  # ✅ Pasar el goal_id
+                )
                 
                 messages.success(
                     request,
@@ -124,7 +142,11 @@ class GoalProductDetailView(LoginRequiredMixin, DetailView):
                 return redirect("cart:detail")
             except CartServiceError as e:
                 messages.error(request, str(e))
-                return self.get(request, *args, **kwargs)
+                context = self.get_context_data(object=self.object)
+                context["form"] = form
+                return self.render_to_response(context)
+        else:
+            messages.error(request, "❌ Por favor verifica los datos ingresados")
         
         context = self.get_context_data(object=self.object)
         context["form"] = form
@@ -144,7 +166,6 @@ class GoalProductsByGoalView(LoginRequiredMixin, ListView):
         goal_id = self.kwargs.get("goal_id")
         return GoalProduct.objects.filter(
             goal_id=goal_id,
-            goal_stock__gt=0,
             goal__status=Goal.Status.ACTIVE
         ).select_related("goal", "product").order_by("position")
 

@@ -57,8 +57,8 @@
           <!-- Stock Info -->
           <div class="alert alert-primary mb-4">
             <strong>Stock Disponible en este Objetivo:</strong>
-            <span class="fs-5">{{ goal_product.goal_stock }} unidades</span>
-            {% if goal_product.goal_stock < 5 %}
+            <span class="fs-5">{{ goal_product.goal_stock_available }} unidades</span>
+            {% if goal_product.goal_stock_available < 5 %}
               <br />
               <small class="text-warning">⚠️ Poco stock disponible</small>
             {% endif %}
@@ -68,11 +68,27 @@
             {% csrf_token %}
             <div class="mb-3">
               <label for="{{ form.quantity.id_for_label }}" class="form-label">{{ form.quantity.label }}</label>
-              {{ form.quantity }}
+              <input type="number"
+                     id="{{ form.quantity.id_for_label }}"
+                     name="quantity"
+                     class="form-control"
+                     placeholder="Cantidad"
+                     min="1"
+                     max="{{ max_quantity }}"
+                     value="1"
+                     required>
               <small class="form-text text-muted d-block mt-1">Máximo disponible: {{ max_quantity }} unidades</small>
               {% if form.quantity.errors %}<div class="invalid-feedback d-block">{{ form.quantity.errors }}</div>{% endif %}
             </div>
-            <button type="submit" class="btn btn-lg btn-success w-100">🛒 Agregar al Carrito</button>
+            <button type="submit"
+                    class="btn btn-lg btn-success w-100"
+                    {% if max_quantity < 1 %}disabled{% endif %}>
+              {% if max_quantity < 1 %}
+                ❌ Sin stock disponible
+              {% else %}
+                🛒 Agregar al Carrito
+              {% endif %}
+            </button>
           </form>
           <!-- Goal Progress -->
           <div class="card bg-light">

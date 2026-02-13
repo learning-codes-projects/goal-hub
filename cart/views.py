@@ -110,13 +110,18 @@ def cart_remove(request, product_id: int):
 @require_POST
 @login_required
 def cart_checkout(request):
-    """Procesar el checkout del carrito activo."""
+
     try:
         order = checkout(request.user)
         messages.success(request, f"✓ Pedido realizado exitosamente. Pedido #{order.id}")
         return redirect("cart:order_list")
     except CartServiceError as e:
         messages.error(request, str(e))
+        return redirect("cart:detail")
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        messages.error(request, f"Error inesperado: {str(e)}")
         return redirect("cart:detail")
 
 

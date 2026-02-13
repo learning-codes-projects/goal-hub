@@ -31,7 +31,12 @@ def get_or_create_active_cart(user) -> Cart:
     return Cart.objects.create(user=user, status=Cart.Status.ACTIVE)
 
 @transaction.atomic
-def add_item(user, product_id: int, quantity: int = 1) -> Cart:
+def add_item(user, product_id: int, quantity: int = 1, goal_id: int = None) -> Cart:
+    """
+    Agrega un producto al carrito.
+    ✅ Si viene de un Goal, valida contra ese GoalProduct específico.
+    ✅ Si no tiene goal_id, valida contra stock global del producto.
+    """
     cart = get_or_create_active_cart(user)
 
     try:
@@ -40,16 +45,50 @@ def add_item(user, product_id: int, quantity: int = 1) -> Cart:
         raise CartServiceError("El producto no existe o está inactivo.")
 
     qty = max(1, int(quantity))
+    goal_obj = None
 
-    # Regla de UX: no dejar superar stock (opcional)
-    if product.stock <= 0:
-        raise CartServiceError("No hay stock disponible.")
-    qty = min(qty, product.stock)
+    # Validar stock disponible
+    if goal_id:
+        # Validar contra el Goal ESPECÍFICO
+        try:
+            goal_obj = Goal.objects.select_for_update().get(
+                pk=goal_id,
+                status=Goal.Status.ACTIVE
+            )
+            goal_product = GoalProduct.objects.select_for_update().get(
+                product_id=product_id,
+                goal_id=goal_id
+            )
+        except (Goal.DoesNotExist, GoalProduct.DoesNotExist):
+            raise CartServiceError("Ese producto no está disponible en ese objetivo.")
+        
+        available = goal_product.goal_stock_available
+        
+        if available <= 0:
+            raise CartServiceError(
+                f"No hay stock disponible en el objetivo '{goal_obj.title}'."
+            )
+        
+        qty = min(qty, available)
+    else:
+        # Validar contra stock global del producto
+        if product.stock <= 0:
+            raise CartServiceError("No hay stock disponible.")
+        qty = min(qty, product.stock)
 
     try:
-        item = CartItem.objects.filter(cart=cart, product=product).first()
+        item = CartItem.objects.filter(cart=cart, product=product, goal=goal_obj).first()
         if item:
-            new_qty = min(item.quantity + qty, product.stock)
+            new_qty = item.quantity + qty
+            
+            # Re-validar stock con la nueva cantidad
+            if goal_id:
+                goal_product = GoalProduct.objects.get(product_id=product_id, goal_id=goal_id)
+                available = goal_product.goal_stock_available
+                new_qty = min(new_qty, item.quantity + available)
+            else:
+                new_qty = min(new_qty, product.stock)
+            
             item.quantity = new_qty
             item.unit_price = product.price
             item.save(update_fields=["quantity", "unit_price"])
@@ -57,12 +96,12 @@ def add_item(user, product_id: int, quantity: int = 1) -> Cart:
             CartItem.objects.create(
                 cart=cart,
                 product=product,
+                goal=goal_obj,
                 quantity=qty,
                 unit_price=product.price,
             )
     except IntegrityError:
-        # Por ejemplo: si un bug intenta crear el mismo producto 2 veces (uniq_cart_product)
-        raise CartServiceError("No se pudo agregar el producto al carrito (duplicado o datos inválidos).")
+        raise CartServiceError("Error al agregar el producto al carrito.")
 
     recalc_totals(cart)
     return cart
@@ -73,7 +112,7 @@ def add_item(user, product_id: int, quantity: int = 1) -> Cart:
 def set_item_quantity(user, item_id: int, quantity: int) -> Cart:
     cart = get_or_create_active_cart(user)
 
-    item = CartItem.objects.select_for_update().select_related("product").filter(
+    item = CartItem.objects.select_for_update().select_related("product", "goal").filter(
         pk=item_id, cart=cart
     ).first()
     if not item:
@@ -89,8 +128,21 @@ def set_item_quantity(user, item_id: int, quantity: int) -> Cart:
     product = item.product
     if not product.is_active:
         raise CartServiceError("El producto está inactivo.")
-    if product.stock < qty:
-        raise CartServiceError(f"Stock insuficiente. Disponible: {product.stock}.")
+    
+    # Validar stock según si vino de un goal o no
+    if item.goal:
+        goal_product = GoalProduct.objects.select_for_update().get(
+            product_id=product.id,
+            goal_id=item.goal.id
+        )
+        available = goal_product.goal_stock_available
+        if available < qty:
+            raise CartServiceError(
+                f"Stock insuficiente. Disponible en objetivo: {available}."
+            )
+    else:
+        if product.stock < qty:
+            raise CartServiceError(f"Stock insuficiente. Disponible: {product.stock}.")
 
     item.quantity = qty
     item.unit_price = product.price
@@ -101,9 +153,9 @@ def set_item_quantity(user, item_id: int, quantity: int) -> Cart:
 
 
 
-def remove_item(user, product_id: int) -> Cart:
+def remove_item(user, item_id: int) -> Cart:
     cart = get_or_create_active_cart(user)
-    CartItem.objects.filter(cart=cart, product_id=product_id).delete()
+    CartItem.objects.filter(pk=item_id, cart=cart).delete()
     recalc_totals(cart)
     return cart
 
@@ -120,19 +172,68 @@ def recalc_totals(cart: Cart) -> None:
 @transaction.atomic
 def checkout(user) -> Order:
     """
-    Procesa el checkout del carrito activo:
-    1. Crea una Order con sus OrderItems
-    2. Actualiza amount_raised en los Goals relacionados
-    3. Evalúa si los Goals se completaron
-    4. Marca el carrito como CHECKED_OUT
-    5. Decrementa el stock de los productos
+    Procesa el checkout del carrito activo con máxima seguridad contra race conditions.
     """
-    cart = get_or_create_active_cart(user)
+    # Obtener carrito lockeado
+    cart = (
+        Cart.objects
+        .select_for_update()
+        .filter(user=user, status=Cart.Status.ACTIVE)
+        .first()
+    )
+    
+    if not cart:
+        raise CartServiceError("No tienes un carrito activo.")
 
-    if not cart.items.exists():
+    # Leer todos los items del carrito
+    cart_items = list(cart.items.select_related("product", "goal").all())
+    
+    if not cart_items:
         raise CartServiceError("El carrito está vacío.")
 
-    # Crear la Order
+    # Extraer product_ids únicos y lockear todos los productos
+    product_ids = [item.product_id for item in cart_items]
+    products_by_id = {}
+    
+    for product in Product.objects.select_for_update().filter(id__in=product_ids):
+        products_by_id[product.id] = product
+
+    # Validar que todos los productos existen
+    if len(products_by_id) != len(set(product_ids)):
+        raise CartServiceError("Uno o más productos no existen.")
+
+    # ✅ FASE 1: Validar stock disponible
+    for cart_item in cart_items:
+        product = products_by_id[cart_item.product_id]
+        quantity = cart_item.quantity
+
+        if not product.is_active:
+            raise CartServiceError(f"El producto '{product.name}' está inactivo.")
+
+        if product.stock < quantity:
+            raise CartServiceError(
+                f"Stock insuficiente para '{product.name}'. "
+                f"Disponible: {product.stock}, solicitado: {quantity}."
+            )
+
+        # Si viene de un Goal, validar también ese stock
+        if cart_item.goal:
+            try:
+                goal_product = GoalProduct.objects.select_for_update().get(
+                    product=product,
+                    goal=cart_item.goal
+                )
+                if goal_product.goal_stock_available < quantity:
+                    raise CartServiceError(
+                        f"Stock insuficiente para '{product.name}' en el objetivo "
+                        f"'{cart_item.goal.title}'. Disponible: {goal_product.goal_stock_available}."
+                    )
+            except GoalProduct.DoesNotExist:
+                raise CartServiceError(
+                    f"El producto '{product.name}' no está disponible en ese objetivo."
+                )
+
+    # ✅ FASE 2: Crear Order
     order = Order.objects.create(
         user=user,
         cart=cart,
@@ -141,51 +242,69 @@ def checkout(user) -> Order:
         status=Order.Status.COMPLETED
     )
 
-    # Procesar cada ítem del carrito
-    for cart_item in cart.items.select_related("product").all():
-        product = cart_item.product
+    # ✅ FASE 3: Procesar items, crear OrderItems y agrupar decrementos
+    product_stock_decrement = {}  # Agrupar decrementos por producto
+    goal_product_decrement = {}   # Agrupar decrementos por GoalProduct
+
+    for cart_item in cart_items:
+        product = products_by_id[cart_item.product_id]
         quantity = cart_item.quantity
         unit_price = cart_item.unit_price
-
-        # Buscar si este producto vino de un GoalProduct
-        goal_related = None
-        goal_product = None
-        goal_products = GoalProduct.objects.select_for_update().filter(product=product).select_related("goal")
-        
-        if goal_products.exists():
-            # Si hay multiple GoalProducts del mismo producto, usar el primero
-            goal_product = goal_products.first()
-            goal_related = goal_product.goal
+        goal = cart_item.goal
 
         # Crear OrderItem
-        order_item = OrderItem.objects.create(
+        OrderItem.objects.create(
             order=order,
             product=product,
-            goal=goal_related,
+            goal=goal,
             quantity=quantity,
             unit_price=unit_price
         )
 
-        # Actualizar amount_raised en el Goal si existe.
-        # Nota: no decrementamos `GoalProduct.goal_stock` aquí para preservar
-        # el "monto potencial" y el "monto objetivo" calculados a partir
-        # del stock inicial asignado al goal. Esto evita que esos valores
-        # disminuyan cuando se concreta una compra.
-        if goal_related and goal_product:
-            amount_to_add = Decimal(str(quantity)) * unit_price
-            goal_related.amount_raised += amount_to_add
-            goal_related.save(update_fields=["amount_raised", "updated_at"])
+        # Acumular decrementos de GoalProduct por clave única
+        if goal:
+            key = (product.id, goal.id)
+            goal_product_decrement[key] = goal_product_decrement.get(key, 0) + quantity
 
-            # Evaluar si el goal se completó (por monto).
-            # No evaluamos EXHAUSTED por falta de stock aquí porque
-            # `goal_stock` permanece como el stock original asignado al goal.
-            goal_related.evaluate_completion()
+        # Registrar decremento de stock global del producto
+        product_stock_decrement[product.id] = product_stock_decrement.get(product.id, 0) + quantity
 
-        # Decrementar stock del producto
-        product.stock -= quantity
+    # ✅ FASE 4a: Calcular incrementos totales POR GOAL (agrupar múltiples productos)
+    goal_increments = {}  # {goal_id: total_decimal_amount}
+    for (product_id, goal_id), total_qty in goal_product_decrement.items():
+        goal_product = GoalProduct.objects.select_for_update().get(
+            product_id=product_id,
+            goal_id=goal_id
+        )
+        amount_to_add = Decimal(str(total_qty)) * Decimal(str(goal_product.unit_price))
+        
+        if goal_id not in goal_increments:
+            goal_increments[goal_id] = Decimal("0.00")
+        goal_increments[goal_id] += amount_to_add
+
+    # ✅ FASE 4b: Actualizar CADA GOAL UNA SOLA VEZ con el total acumulado
+    for goal_id, total_increment in goal_increments.items():
+        goal = Goal.objects.select_for_update().get(pk=goal_id)
+        goal.amount_raised += total_increment
+        goal.save(update_fields=["amount_raised", "updated_at"])
+        goal.evaluate_completion()
+
+    # ✅ FASE 4c: Actualizar GoalProduct.goal_stock_sold
+    for (product_id, goal_id), total_qty in goal_product_decrement.items():
+        goal_product = GoalProduct.objects.select_for_update().get(
+            product_id=product_id,
+            goal_id=goal_id
+        )
+        goal_product.goal_stock_sold += total_qty
+        goal_product.save(update_fields=["goal_stock_sold"])
+
+    # ✅ FASE 4b: Decrementar stock de productos (acumulativamente)
+    for product_id, total_qty in product_stock_decrement.items():
+        product = products_by_id[product_id]
+        product.stock -= total_qty
         product.save(update_fields=["stock"])
 
-    # Marcar carrito como CHECKED_OUT
+    # ✅ FASE 5: Marcar carrito como completado
     cart.status = Cart.Status.CHECKED_OUT
     cart.checked_out_at = timezone.now()
     cart.save(update_fields=["status", "checked_out_at"])

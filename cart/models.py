@@ -50,6 +50,14 @@ class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey("products.Product", on_delete=models.CASCADE)
 
+    goal = models.ForeignKey(
+        "goals.Goal",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cart_items"
+    )
+
     quantity = models.PositiveIntegerField(default=1)
 
     # snapshot al agregar (opcional pero útil)
@@ -59,8 +67,8 @@ class CartItem(models.Model):
 
     class Meta:
         constraints = [
-            # ✅ el mismo producto NO se duplica dentro del mismo carrito
-            models.UniqueConstraint(fields=["cart", "product"], name="uniq_cart_product"),
+            # ✅ el mismo producto del mismo goal NO se duplica en el carrito
+            models.UniqueConstraint(fields=["cart", "product", "goal"], name="uniq_cart_product_goal"),
 
             # ✅ cantidades y precio válidos
             models.CheckConstraint(check=Q(quantity__gt=0), name="cart_qty_gt_0"),

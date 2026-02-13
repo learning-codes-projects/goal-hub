@@ -96,25 +96,48 @@ class Goal(models.Model):
         target_total = self.computed_target_amount
         amount_ok = target_total > 0 and self.amount_raised >= target_total
 
-        # Verificar si se agotó el stock
-        out_of_stock = self.goal_stock_total == 0
+        # ✅ Verificar si se agotó el stock (stock disponible = 0)
+        current_stock = self.goal_stock_total
+        out_of_stock = current_stock == 0 and int(
+            self.items.aggregate(total=models.Sum("goal_stock"))["total"] or 0
+        ) > 0
 
-        # Definir estado basado en lo que ocurra primero
-        if amount_ok:
-            self.status = self.Status.ACHIEVED
-        elif out_of_stock:
-            self.status = self.Status.EXHAUSTED
+        # Definir estado basado en complete_when
+        new_status = None
+        
+        if self.complete_when == self.CompleteWhen.AMOUNT:
+            if amount_ok:
+                new_status = self.Status.ACHIEVED
+        elif self.complete_when == self.CompleteWhen.STOCK:
+            if out_of_stock:
+                new_status = self.Status.EXHAUSTED
+        elif self.complete_when == self.CompleteWhen.EITHER:
+            if amount_ok:
+                new_status = self.Status.ACHIEVED
+            elif out_of_stock:
+                new_status = self.Status.EXHAUSTED
 
         # Guardar cambios si hay un cambio de estado
-        if self.status != self.Status.ACTIVE:
+        if new_status and new_status != self.status:
             from django.utils import timezone
+            self.status = new_status
             self.achieved_at = timezone.now()
             self.save(update_fields=["status", "achieved_at", "updated_at"])
 
     @property
     def goal_stock_total(self) -> int:
-        """Stock total asignado a este goal (suma de todos los GoalProduct.goal_stock)."""
-        return int(self.items.aggregate(total=models.Sum("goal_stock"))["total"] or 0)
+        """
+        Stock DISPONIBLE (sin vender) del goal.
+        = SUM(goal_stock - goal_stock_sold) de todos los GoalProducts
+        """
+        from django.db.models import ExpressionWrapper, IntegerField
+        expr = ExpressionWrapper(
+            models.F("goal_stock") - models.F("goal_stock_sold"),
+            output_field=IntegerField(),
+        )
+        return int(
+            self.items.aggregate(total=models.Sum(expr))["total"] or 0
+        )
 
 
     @property
@@ -191,6 +214,8 @@ class GoalProduct(models.Model):
     )
 
     goal_stock = models.PositiveIntegerField(default=0)
+    # ✅ NUEVO: Track cuánto se ha vendido en este objetivo
+    goal_stock_sold = models.PositiveIntegerField(default=0)
 
     unit_price = models.DecimalField(
         max_digits=12,
@@ -212,3 +237,8 @@ class GoalProduct(models.Model):
 
     def __str__(self) -> str:
         return f"{self.goal_id} - {self.product_id} ({self.goal_stock})"
+
+    @property
+    def goal_stock_available(self) -> int:
+        """Stock disponible para vender (inicial - vendido)."""
+        return max(0, self.goal_stock - self.goal_stock_sold)
