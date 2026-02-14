@@ -1,0 +1,6 @@
+Django>=4.2.0
+
+# Dev tools
+pre-commit
+commitizen
+ruff
