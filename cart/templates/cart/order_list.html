@@ -2,10 +2,6 @@
 {% block title %}Mis Pedidos - GoalHub{% endblock %}
 {% block content %}
   <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h3 mb-0">📋 Mis Pedidos</h1>
-      <a href="{% url 'cart:detail' %}" class="btn btn-outline-primary btn-sm">Volver al Carrito</a>
-    </div>
     {% if orders %}
       <div class="row">
         {% for order in orders %}

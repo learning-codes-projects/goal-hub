@@ -1,5 +1,9 @@
+{% load static %}
 <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
   <div class="container">
+    <img src="{% static 'images/goalhub-logo.png' %}"
+         alt="GoalHub logo"
+         width="50" />
     <a class="navbar-brand fw-semibold" href="{% url 'dashboard:home' %}">GoalHub</a>
     <button class="navbar-toggler"
             type="button"
@@ -31,13 +35,13 @@
       <div class="d-flex gap-2">
         {% if request.user.is_authenticated %}
           {% if perms.cart.view_cart %}
-            <a href="{% url 'cart:detail' %}" class="btn btn-primary">🛒 Carrito</a>
-            <a href="{% url 'cart:order_list' %}" class="btn btn-info">📋 Mis Pedidos</a>
+            <a href="{% url 'cart:detail' %}" class="btn btn-primary">Carrito</a>
+            <a href="{% url 'cart:order_list' %}" class="btn btn-black">Mis Pedidos</a>
           {% endif %}
           <span class="navbar-text small text-muted">Hola, {{ request.user.username }}</span>
           <a class="btn btn-outline-secondary btn-sm" href="{% url 'logout' %}">Salir</a>
         {% else %}
-          <a class="btn btn-outline-primary btn-sm" href="{% url 'login' %}">Login</a>
+          <a class="btn btn-outline-dark btn-sm" href="{% url 'login' %}">Login</a>
           <a class="btn btn-primary btn-sm" href="{% url 'register:index' %}">Registro</a>
         {% endif %}
       </div>
