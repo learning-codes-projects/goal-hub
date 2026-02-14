@@ -57,11 +57,16 @@ class GoalForm(forms.ModelForm):
 
     class Meta:
         model = Goal
-        fields = ["title"]
+        fields = ["title", "motivo"]
         widgets = {
             "title": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "Nombre del objetivo"
+            }),
+            "motivo": forms.Textarea(attrs={
+                "class": "form-control",
+                "placeholder": "Describe por qué se necesita alcanzar este objetivo",
+                "rows": 4
             }),
         }
 

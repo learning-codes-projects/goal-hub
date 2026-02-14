@@ -34,6 +34,12 @@ class Goal(models.Model):
 
     title = models.CharField(max_length=120)
     
+    motivo = models.TextField(
+        "Motivo / Descripción",
+        blank=True,
+        help_text="Describe por qué se necesita alcanzar este objetivo"
+    )
+    
     # Lo dejo por compatibilidad (opcional). Podés borrarlo después si ya no lo querés.
     photo = models.ImageField(
         "Foto",

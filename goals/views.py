@@ -218,7 +218,7 @@ class GoalCreateView(LoginRequiredMixin, RecipientRequiredMixin, CreateView):
         # Evaluar si el goal está completo basado en lo que hubiese sido asignado
         self.object.evaluate_completion()
 
-        messages.success(self.request, "Objetivo creado.")
+        #messages.success(self.request, "Objetivo creado.")
         return redirect("goals:index")  # <-- redirige al index
 
 
@@ -258,7 +258,7 @@ class GoalUpdateView(LoginRequiredMixin, RecipientRequiredMixin, UpdateView):
         # Evaluar si el goal está completo basado en los cambios
         self.object.evaluate_completion()
 
-        messages.success(self.request, "Objetivo actualizado.")
+        #messages.success(self.request, "Objetivo actualizado.")
         return redirect("goals:index")  # <-- redirige al index
 
 class GoalDeleteView(LoginRequiredMixin, RecipientRequiredMixin, DeleteView):

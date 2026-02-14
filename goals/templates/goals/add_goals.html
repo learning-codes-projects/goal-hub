@@ -6,7 +6,7 @@
     <div class="col-md-8 offset-md-2">
       <div class="card">
         <div class="card-header bg-primary text-white">
-          <h2 class="mb-0">Crear Nuevo Objetivo</h2>
+          <h2 class="mb-0">Nuevo objetivo</h2>
         </div>
         <div class="card-body">
           <form method="post"
@@ -19,6 +19,11 @@
               <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
               {{ form.title }}
               {% if form.title.errors %}<div class="invalid-feedback d-block">{{ form.title.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+              <label for="{{ form.motivo.id_for_label }}" class="form-label">{{ form.motivo.label }}</label>
+              {{ form.motivo }}
+              {% if form.motivo.errors %}<div class="invalid-feedback d-block">{{ form.motivo.errors }}</div>{% endif %}
             </div>
             <div class="mb-3">
               <label for="{{ form.photo_file.id_for_label }}" class="form-label">{{ form.photo_file.label }}</label>

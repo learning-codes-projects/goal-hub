@@ -21,6 +21,11 @@
               {% if form.title.errors %}<div class="invalid-feedback d-block">{{ form.title.errors }}</div>{% endif %}
             </div>
             <div class="mb-3">
+              <label for="{{ form.motivo.id_for_label }}" class="form-label">{{ form.motivo.label }}</label>
+              {{ form.motivo }}
+              {% if form.motivo.errors %}<div class="invalid-feedback d-block">{{ form.motivo.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
               <label for="{{ form.photo_file.id_for_label }}" class="form-label">{{ form.photo_file.label }}</label>
               {% if object.photo_src %}
                 <div class="mb-2">
