@@ -62,7 +62,7 @@
                   </td>
                   <td>${{ item.unit_price|floatformat:2 }}</td>
                   <td>
-                    <span class="badge bg-info">{{ item.quantity }}</span>
+                    <span class="badge bg-black">{{ item.quantity }}</span>
                   </td>
                   <td class="text-end fw-semibold">${{ item.unit_price|floatformat:2 }}</td>
                   <td>
@@ -100,8 +100,5 @@
       </div>
     </div>
     <!-- Botones de Acción -->
-    <div class="mt-4 d-flex gap-2 justify-content-end">
-      <a href="{% url 'cart:order_list' %}" class="btn btn-outline-secondary">Volver a Pedidos</a>
-    </div>
   </div>
 {% endblock %}

@@ -7,7 +7,7 @@
         {% for order in orders %}
           <div class="col-md-6 col-lg-4 mb-4">
             <div class="card h-100 shadow-sm">
-              <div class="card-header bg-success text-white">
+              <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">Pedido #{{ order.id }}</h5>
               </div>
               <div class="card-body">
@@ -36,7 +36,7 @@
                   <div class="h5 mb-0 text-success">${{ order.total }}</div>
                 </div>
                 <a href="{% url 'cart:order_detail' order.id %}"
-                   class="btn btn-success btn-sm w-100">Ver Detalles →</a>
+                   class="btn btn-black btn-sm w-100">Ver Detalles →</a>
               </div>
             </div>
           </div>

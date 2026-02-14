@@ -5,7 +5,6 @@
   <div class="row mb-4">
     <div class="col-12">
       <div class="d-flex justify-content-between align-items-center">
-        <h1>Todos los Objetivos Disponibles</h1>
         {% if perms.goals.add_goal %}
           <a href="{% url 'goals:index' %}" class="btn btn-outline-primary">← Mi Panel de Objetivos</a>
         {% endif %}
@@ -144,10 +143,9 @@
       </nav>
     {% endif %}
   {% else %}
-    <div class="alert alert-info" role="alert">
+    <div role="alert">
       <h4 class="alert-heading">No hay objetivos disponibles</h4>
       <p>En este momento no hay objetivos activos para explorar. ¡Vuelve pronto!</p>
-      <hr />
       <p class="mb-0">
         {% if perms.goals.add_goal %}
           <a href="{% url 'goals:index' %}" class="btn btn-primary">← Volver a Mi Panel</a>

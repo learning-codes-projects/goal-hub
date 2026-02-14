@@ -2,7 +2,7 @@
 {% block content %}
   <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h1 class="h3 mb-0">Tu carrito</h1>
+      <h1 class="h3 mb-0"></h1>
       <div class="d-flex gap-2">
         <a href="{% url 'cart:item_create' %}" class="btn btn-primary btn-sm">Agregar ítem</a>
         <a href="{% url 'products:list' %}"
@@ -67,7 +67,7 @@
         </div>
       </div>
     {% else %}
-      <div class="alert alert-info">Tu carrito está vacío.</div>
+      <div class="alert alert-dark">Tu carrito está vacío.</div>
     {% endif %}
   </div>
 {% endblock %}
