@@ -1,4 +1,9 @@
-# 🎯 GoalHub
+
+<p align="center">
+  <img src="static/images/goalhub-logo.png" alt="alt" width="400" />
+</p>
+
+#  GoalHub
 
 **Plataforma integral de recaudación de fondos basada en objetivos**
 
