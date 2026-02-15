@@ -414,12 +414,12 @@ Cliente en /goals/ → Objetivo público
 ### 🔐 **Admin de Usuarios y Permisos**
 
 #### Gestión de Usuarios
-![Admin - Usuarios](static/screenshots/admin_usuarios_permissions.png)
+![Admin - Usuarios](static/admin/admin_usuarios_permissions.png)
 
 *Panel de admin: listado de usuarios, búsqueda, edición de permisos.*
 
 #### Gestión de Grupos
-![Admin - Grupos](static/screenshots/admin_groups.png)
+![Admin - Grupos](static/admin/admin_groups.png)
 
 *Pantalla de "Grupos" en Django Admin: crear/editar roles (Admin, Destinatario, Cliente).*
 
