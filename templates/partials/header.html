@@ -34,7 +34,7 @@
       </ul>
       <div class="d-flex gap-2">
         {% if request.user.is_authenticated %}
-          {% if perms.cart.view_cart %}
+          {% if perms.cart.view_cart and not request.user.is_superuser %}
             <a href="{% url 'cart:detail' %}" class="btn btn-primary">Carrito</a>
             <a href="{% url 'cart:order_list' %}" class="btn btn-black">Mis Pedidos</a>
           {% endif %}
