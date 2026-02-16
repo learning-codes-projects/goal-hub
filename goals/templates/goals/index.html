@@ -17,7 +17,6 @@
       {% for goal in goals %}
         <div class="col-md-6 col-lg-4 mb-4">
           <div class="card h-100">
-            <!-- Card Image -->
             {% if goal.photo_src %}
               <img src="{{ goal.photo_src }}"
                    alt="{{ goal.title }}"
@@ -33,7 +32,6 @@
                 <span class="text-white fs-3">📋</span>
               </div>
             {% endif %}
-            <!-- Card Header with Status Badge -->
             <div class="card-header d-flex justify-content-between align-items-center">
               <h5 class="card-title mb-0">{{ goal.title }}</h5>
               {% if goal.status == 'active' %}
@@ -46,9 +44,7 @@
                 <span class="badge bg-secondary">Cancelado</span>
               {% endif %}
             </div>
-            <!-- Card Body -->
             <div class="card-body">
-              <!-- Monto -->
               <div class="mb-3">
                 <small class="text-muted">Monto Objetivo</small>
                 <div class="progress" style="height: 20px;">
@@ -68,28 +64,24 @@
                 </div>
                 <small class="text-muted d-block mt-1">${{ goal.amount_raised }} / ${{ goal.computed_target_amount }}</small>
               </div>
-              <!-- Stock -->
               <div class="mb-3">
                 <small class="text-muted">Stock Total del Objetivo</small>
                 <p class="mb-0">
                   <strong>{{ goal.goal_stock_total }}</strong> unidades
                 </p>
               </div>
-              <!-- Productos -->
               <div class="mb-3">
                 <small class="text-muted">Productos Asignados</small>
                 <p class="mb-0">
                   <strong>{{ goal.items.count }}</strong> productos
                 </p>
               </div>
-              <!-- Monto Objetivo calculado desde productos -->
               <div class="mb-3">
                 <small class="text-muted">Monto Objetivo (total productos)</small>
                 <p class="mb-0 text-success">
                   <strong>${{ goal.computed_target_amount }}</strong>
                 </p>
               </div>
-              <!-- Tipo de Completitud -->
               <div class="mb-3">
                 <small class="text-muted">Se completa por:</small>
                 <p class="mb-0">
@@ -104,7 +96,6 @@
                   </span>
                 </p>
               </div>
-              <!-- Fechas -->
               <div class="mb-3">
                 <small class="text-muted d-block">Creado: {{ goal.created_at|date:"d/m/Y H:i" }}</small>
                 {% if goal.achieved_at %}
@@ -115,7 +106,6 @@
                 {% endif %}
               </div>
             </div>
-            <!-- Card Footer with Actions -->
             <div class="card-footer bg-light">
               <div class="d-flex gap-2">
                 {% if perms.goals.change_goal %}

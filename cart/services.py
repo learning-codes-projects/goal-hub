@@ -10,7 +10,6 @@ from .models import Cart, CartItem, Order, OrderItem
 
 
 class CartServiceError(Exception):
-    """Error genérico de carrito (para mostrar mensajes)."""
     pass
 
 @transaction.atomic
@@ -32,11 +31,6 @@ def get_or_create_active_cart(user) -> Cart:
 
 @transaction.atomic
 def add_item(user, product_id: int, quantity: int = 1, goal_id: int = None) -> Cart:
-    """
-    Agrega un producto al carrito.
-    ✅ Si viene de un Goal, valida contra ese GoalProduct específico.
-    ✅ Si no tiene goal_id, valida contra stock global del producto.
-    """
     cart = get_or_create_active_cart(user)
 
     try:
@@ -171,9 +165,6 @@ def recalc_totals(cart: Cart) -> None:
 
 @transaction.atomic
 def checkout(user) -> Order:
-    """
-    Procesa el checkout del carrito activo con máxima seguridad contra race conditions.
-    """
     # Obtener carrito lockeado
     cart = (
         Cart.objects

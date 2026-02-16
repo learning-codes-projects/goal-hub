@@ -126,7 +126,6 @@ def cart_checkout(request):
 
 
 class OrderListView(LoginRequiredMixin, ListView):
-    """Lista de órdenes realizadas por el usuario."""
     model = Order
     template_name = "cart/order_list.html"
     context_object_name = "orders"
@@ -137,7 +136,6 @@ class OrderListView(LoginRequiredMixin, ListView):
 
 
 class OrderDetailView(LoginRequiredMixin, DetailView):
-    """Detalle de una orden específica."""
     model = Order
     template_name = "cart/order_detail.html"
     context_object_name = "order"

@@ -3,7 +3,7 @@ from django.views.generic import TemplateView
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
-    """Vista del dashboard principal."""
+
 
     template_name = "dashboard/index.html"
 

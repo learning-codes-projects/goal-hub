@@ -8,7 +8,6 @@
     </div>
   </div>
   <div class="row">
-    <!-- Imagen del Producto -->
     <div class="col-md-6 mb-4">
       {% if goal_product.product.photo_src %}
         <img src="{{ goal_product.product.photo_src }}"
@@ -33,28 +32,22 @@
         </div>
       {% endif %}
     </div>
-    <!-- Detalles del Producto -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-body">
-          <!-- Título -->
           <h1 class="card-title mb-3">{{ goal_product.product.name }}</h1>
-          <!-- Objetivo Badge -->
           <div class="alert alert-info mb-3">
             <strong>Parte del Objetivo:</strong>
             <a href="{% url 'goals:all' %}" class="alert-link">{{ goal_product.goal.title }}</a>
             <br />
             <small>Propietario: {{ goal_product.goal.owner.username }}</small>
           </div>
-          <!-- Descripción -->
           <p class="text-muted mb-4">{{ goal_product.product.description }}</p>
-          <!-- Precio -->
           <div class="mb-4">
             <h4 class="text-success">
               Precio: <strong>${{ goal_product.unit_price }}</strong>
             </h4>
           </div>
-          <!-- Stock Info -->
           <div class="alert alert-primary mb-4">
             <strong>Stock Disponible en este Objetivo:</strong>
             <span class="fs-5">{{ goal_product.goal_stock_available }} unidades</span>
@@ -63,7 +56,6 @@
               <small class="text-warning">⚠️ Poco stock disponible</small>
             {% endif %}
           </div>
-          <!-- Agregar al Carrito Form -->
           <form method="post" class="mb-4">
             {% csrf_token %}
             <div class="mb-3">
@@ -90,11 +82,9 @@
               {% endif %}
             </button>
           </form>
-          <!-- Goal Progress -->
           <div class="card bg-light">
             <div class="card-body">
               <h6 class="card-title">Progreso del Objetivo</h6>
-              <!-- Monto Progress -->
               <p class="mb-2">
                 <strong>Monto Recaudado:</strong>
                 <span>${{ goal_product.goal.amount_raised }} / ${{ goal_product.goal.computed_target_amount }}</span>
@@ -114,12 +104,10 @@
                        style="width: 0%">Sin objetivo</div>
                 {% endif %}
               </div>
-              <!-- Stock Progress -->
               <p class="mb-2">
                 <strong>Stock Total del Objetivo:</strong>
                 <span>{{ goal_product.goal.goal_stock_total }} unidades</span>
               </p>
-              <!-- Estado -->
               <p class="mb-0">
                 <strong>Estado:</strong>
                 {% if goal_product.goal.status == 'active' %}
@@ -138,7 +126,6 @@
       </div>
     </div>
   </div>
-  <!-- Mensajes de Error/Éxito -->
   {% if messages %}
     <div class="row mt-4">
       <div class="col-12">

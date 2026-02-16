@@ -7,13 +7,7 @@ from django.db import models
 
 
 class Goal(models.Model):
-    """
-    Objetivo/Campaña del owner.
 
-    Se puede marcar como:
-    - ACHIEVED: si se alcanzó el monto (amount_raised >= target_amount)
-    - EXHAUSTED: si se agotó el stock asignado al goal (GoalProduct.goal_stock == 0 en todos)
-    """
 
     class Status(models.TextChoices):
         ACTIVE = "active", "Activo"
@@ -132,10 +126,6 @@ class Goal(models.Model):
 
     @property
     def goal_stock_total(self) -> int:
-        """
-        Stock DISPONIBLE (sin vender) del goal.
-        = SUM(goal_stock - goal_stock_sold) de todos los GoalProducts
-        """
         from django.db.models import ExpressionWrapper, IntegerField
         expr = ExpressionWrapper(
             models.F("goal_stock") - models.F("goal_stock_sold"),
@@ -148,10 +138,6 @@ class Goal(models.Model):
 
     @property
     def computed_target_amount(self):
-        """
-        Monto objetivo calculado a partir de los productos asignados al goal:
-        SUM(goal_stock * unit_price)
-        """
         expr = models.ExpressionWrapper(
             models.F("goal_stock") * models.F("unit_price"),
             output_field=models.DecimalField(max_digits=14, decimal_places=2),
@@ -160,7 +146,6 @@ class Goal(models.Model):
 
     @property
     def photo_src(self) -> str:
-        """Devuelve src listo para <img>, prioriza Base64 y si no hay, usa ImageField."""
         if self.photo_b64 and self.photo_mime:
             return f"data:{self.photo_mime};base64,{self.photo_b64}"
         if self.photo:
@@ -168,9 +153,6 @@ class Goal(models.Model):
         return ""
     
     def get_status_display_verbose(self) -> str:
-        """
-        Devuelve descripción verbal del estado del goal.
-        """
         status_labels = {
             self.Status.ACTIVE: "Activo - Sin completar",
             self.Status.ACHIEVED: "Completado ✓ (Monto alcanzado)",
@@ -180,15 +162,6 @@ class Goal(models.Model):
         return status_labels.get(self.status, self.get_status_display())
     
     def get_completion_progress(self) -> dict:
-        """
-        Retorna un diccionario con el progreso de cumplimiento del goal:
-        - amount_raised: monto ya recaudado
-        - target_amount: monto objetivo calculado desde los productos
-        - goal_stock_total: cantidad total de items sin vender
-        - percentage: porcentaje de completitud (0-100)
-        - is_complete: booleano si está completado
-        - status_verbose: descripción del estado
-        """
         target = self.computed_target_amount
         stock = self.goal_stock_total
 
@@ -207,11 +180,6 @@ class Goal(models.Model):
 
 
 class GoalProduct(models.Model):
-    """
-    Item / línea de producto dentro del Goal.
-    Guarda el 'stock del goal' (reservado para esa campaña) + un precio snapshot.
-    """
-
     goal = models.ForeignKey(Goal, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(
         "products.Product",
@@ -246,5 +214,4 @@ class GoalProduct(models.Model):
 
     @property
     def goal_stock_available(self) -> int:
-        """Stock disponible para vender (inicial - vendido)."""
         return max(0, self.goal_stock - self.goal_stock_sold)

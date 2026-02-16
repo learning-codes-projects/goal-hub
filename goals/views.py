@@ -11,7 +11,6 @@ from .models import Goal, GoalProduct
 from .forms import GoalForm, GoalProductFormSet, GoalProductAddToCartForm
 
 class RecipientRequiredMixin:
-    """Mixin que permite acceso solo a usuarios del grupo 'destinatarios' (o superusers)."""
     required_group = "destinatarios"
 
     def dispatch(self, request, *args, **kwargs):
@@ -58,10 +57,6 @@ class AllGoalsView(LoginRequiredMixin, ListView):
 
 
 class GoalProductsListView(LoginRequiredMixin, ListView):
-    """
-    Catálogo de productos disponibles en Goals.
-    Solo muestra GoalProducts con stock disponible > 0 y goal activo.
-    """
     model = GoalProduct
     template_name = "goals/goal_products_list.html"
     context_object_name = "goal_products"
@@ -75,9 +70,6 @@ class GoalProductsListView(LoginRequiredMixin, ListView):
 
 
 class GoalProductDetailView(LoginRequiredMixin, DetailView):
-    """
-    Detalle de un producto Goal con opción de agregar al carrito.
-    """
     model = GoalProduct
     template_name = "goals/goal_product_detail.html"
     context_object_name = "goal_product"
@@ -96,7 +88,6 @@ class GoalProductDetailView(LoginRequiredMixin, DetailView):
         return context
 
     def post(self, request, *args, **kwargs):
-        """Manejar agregar al carrito."""
         self.object = self.get_object()
         form = GoalProductAddToCartForm(request.POST)
         
@@ -154,9 +145,6 @@ class GoalProductDetailView(LoginRequiredMixin, DetailView):
 
 
 class GoalProductsByGoalView(LoginRequiredMixin, ListView):
-    """
-    Muestra todos los productos de un goal específico.
-    """
     model = GoalProduct
     template_name = "goals/goal_products_by_goal.html"
     context_object_name = "goal_products"

@@ -9,10 +9,10 @@ from .models import Goal, GoalProduct
 
 
 class ProductSelectWithPrice(forms.Select):
-    """Widget que renderiza un select con data-price en cada opción."""
+
     
     def render(self, name, value, attrs=None, renderer=None):
-        """Renderiza el select con atributos data-price."""
+
         if attrs is None:
             attrs = {}
         
@@ -124,7 +124,6 @@ GoalProductFormSet = inlineformset_factory(
 
 
 class GoalProductAddToCartForm(forms.Form):
-    """Formulario para agregar un producto Goal al carrito."""
     quantity = forms.IntegerField(
         min_value=1,
         initial=1,

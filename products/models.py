@@ -30,7 +30,6 @@ class Product(models.Model):
 
     @property
     def photo_src(self) -> str:
-        """Devuelve src listo para <img>, prioriza Base64 y si no hay, usa ImageField."""
         if self.photo_b64 and self.photo_mime:
             return f"data:{self.photo_mime};base64,{self.photo_b64}"
         if self.photo:

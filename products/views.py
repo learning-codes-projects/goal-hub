@@ -32,12 +32,6 @@ def _infer_mime_from_bytes(img_bytes: bytes) -> str:
         return "application/octet-stream"
     
 def _parse_base64_input(value: str) -> tuple[str, str]:
-    """
-    Acepta:
-    - data:image/png;base64,AAAA...
-    - AAAA... (base64 puro)
-    Retorna: (mime, b64)
-    """
     value = (value or "").strip()
     if not value:
         return ("", "")
